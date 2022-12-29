@@ -1,2 +1,32 @@
 # ddm-akka
-Akka example and homework code for the "Distributed Data Management" lecture.
+## Use to build a .jar file of your project to spread and run it
+
+Terminal - Program path
+```sh
+mvn package
+```
+
+
+## Try to run the .jar file:
+
+Terminal - Program path
+```sh
+java -jar target/ddm-akka-1.0.jar
+```
+Output: No parameters given
+
+## Define Master
+Start a master process [params - to setup the master]
+
+e.g. with host
+```sh
+java -jar target/ddm-akka-1.0.jar master -h localhost
+```
+
+## Define Worker
+Start a worker process on master [params]
+
+e.g.
+```sh
+java -jar target/ddm-akka-1.0.jar worker -mh localhost
+```

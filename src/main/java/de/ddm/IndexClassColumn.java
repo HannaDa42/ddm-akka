@@ -8,8 +8,13 @@ import java.util.Objects;
 @NoArgsConstructor
 @Getter
 public class IndexClassColumn {
+    // create hash Index for every column
     int file;         //file number
     int column;       // column number
+
+    @Override
+    // create hash id for column (file x column)
+    public int hashCode() {return Objects.hash(file, column);}
 
     @Override
     public boolean equals(Object o) {
@@ -22,8 +27,4 @@ public class IndexClassColumn {
     @Override
     // string msg-debug
     public String toString() {return "ColumnIndex["+ file + " | " + column + ']';}
-
-    @Override
-    // create hash id for column (file x column)
-    public int hashCode() {return Objects.hash(file, column);}
 }

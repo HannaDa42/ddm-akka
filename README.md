@@ -6,6 +6,7 @@ Terminal - Program path
 mvn package
 ```
 
+
 ## Try to run the .jar file:
 
 Terminal - Program path

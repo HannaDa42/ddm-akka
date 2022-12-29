@@ -31,8 +31,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	Map<ActorRef<DependencyWorker.Message>, IndexClassColumn> actorColumnMap = new HashMap<>();
 	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorOccupationMap = new HashMap<>();
 	// file representation
-	String[][][] fileRepresentation;
-	DataProvider dataprov;
+	String[][][] fileRepresentation; //TODO: ?
+	DataProvider dataprov; //TODO: mit DataProvider verknüpfen
 
 	////////////////////
 	// Actor Messages //

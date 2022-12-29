@@ -24,7 +24,7 @@ public class ComparisonClass {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ColumnId cID = (ColumnId) o;
+        ComparisonClass cID = (ComparisonClass) o;
         return fileId == cID.fileId && columnId == cID.columnId;
     }
 
@@ -33,7 +33,7 @@ public class ComparisonClass {
         return Objects.hash(fileId, columnId);
     }
 
-    public boolean isDifferentFile(ColumnId cID) {
+    public boolean isDifferentFile(ComparisonClass cID) {
         return cID.getFileId() != this.fileId;
     }
 

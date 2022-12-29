@@ -1,5 +1,4 @@
 package de.ddm.actors.profiling;
-
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
@@ -10,38 +9,46 @@ import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 import de.ddm.actors.patterns.LargeMessageProxy;
+import de.ddm.IndexClassColumn;
 import de.ddm.serialization.AkkaSerializable;
 import de.ddm.singletons.InputConfigurationSingleton;
 import de.ddm.singletons.SystemConfigurationSingleton;
 import de.ddm.structures.InclusionDependency;
-import de.ddm.ComparisonClass;
+import lombok.extern.slf4j.Slf4j;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+@Slf4j
 public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
+
+	// state
+	Map<Integer, List<Set<String>>> idContentMap = new HashMap<>();
+	Map<Integer, Boolean> filteredMap = new HashMap<>();
+	// actor ref
+	Map<ActorRef<DependencyWorker.Message>, ColumnId> actorColumnMap = new HashMap<>();
+	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorOccupationMap = new HashMap<>();
+	// file representation
+	String[][][] fileRepresentation;
 
 	////////////////////
 	// Actor Messages //
 	////////////////////
 
-	public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
+	public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {									// C
 	}
 
 	@NoArgsConstructor
-	public static class StartMessage implements Message {
+	public static class StartMessage implements Message {																// C
 		private static final long serialVersionUID = -1963913294517850454L;
 	}
 
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class HeaderMessage implements Message {
+	public static class HeaderMessage implements Message {																// C
 		private static final long serialVersionUID = -5322425954432915838L;
 		int id;
 		String[] header;
@@ -50,7 +57,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class BatchMessage implements Message {
+	public static class BatchMessage implements Message {																// C
 		private static final long serialVersionUID = 4591192372652568030L;
 		int id;
 		List<String[]> batch;
@@ -59,7 +66,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class RegistrationMessage implements Message {
+	public static class RegistrationMessage implements Message {														// C
 		private static final long serialVersionUID = -4025238529984914107L;
 		ActorRef<DependencyWorker.Message> dependencyWorker;
 	}
@@ -67,32 +74,52 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class CompletionMessage implements Message {
-		private static final long serialVersionUID = -7642425159675583598L;
-		ActorRef<DependencyWorker.Message> dependencyWorker;
-		int result;
+	public static class RequestDataMessage implements Message {															// C
+		private static final long serialVersionUID = 868083729453247423L;
+		ActorRef<LargeMessageProxy.Message> dependencyWorkerReceiverProxy;
+		ColumnId referencedColumnIdSingle;
+		ColumnId dependentColumnIdSingle;
+		int dependentFrom;
+		int dependentTo;
+		boolean referencedColumn;
+		int id;
 	}
 
-	//where is data requested? where does the data come from?
-	//shutdown message is missing -> is it required?
+	@Getter
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class CompletionMessage implements Message {															// C
+		private static final long serialVersionUID = -7642425159675583598L;
+		ActorRef<DependencyWorker.Message> dependencyWorker;
+		ColumnId referencedColumnIdSingle;
+		ColumnId dependentColumnIdSingle;
+		boolean candidate;
+		int id;
+	}
+
+	//data request
+	//shutdown message is missing!
 
 	////////////////////////
 	// Actor Construction //
 	////////////////////////
 
-	public static final String DEFAULT_NAME = "dependencyMiner";
+	public static final String DEFAULT_NAME = "dependencyMiner";														// C
 
-	public static final ServiceKey<DependencyMiner.Message> dependencyMinerService = ServiceKey.create(DependencyMiner.Message.class, DEFAULT_NAME + "Service");
+	public static final ServiceKey<DependencyMiner.Message> dependencyMinerService = ServiceKey.create(DependencyMiner.Message.class, DEFAULT_NAME + "Service"); // C
 
 	public static Behavior<Message> create() {
 		return Behaviors.setup(DependencyMiner::new);
-	}
+	}							// C
 
 	private DependencyMiner(ActorContext<Message> context) {
 		super(context);
 		this.discoverNaryDependencies = SystemConfigurationSingleton.get().isHardMode();
 		this.inputFiles = InputConfigurationSingleton.get().getInputFiles();
 		this.headerLines = new String[this.inputFiles.length][];
+		this.fileRepresentation = new String[this.inputFiles.length][][];												// C
+		///!!!!
+
 
 		this.inputReaders = new ArrayList<>(inputFiles.length);
 		for (int id = 0; id < this.inputFiles.length; id++)

@@ -50,6 +50,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	public static class ResultMessage implements Message {
 		private static final long serialVersionUID = 5128375631926163648L;
 		//TODO: Datendastellung -> hier referenzierte Column, die mit interdependenten Datencolumn gematcht wurde
+		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
 	}
 
 	@NoArgsConstructor

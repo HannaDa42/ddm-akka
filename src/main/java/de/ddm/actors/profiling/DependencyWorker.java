@@ -8,6 +8,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.remote.ShutDownAssociation;
+import de.ddm.IndexClassColumn;
 import de.ddm.actors.patterns.LargeMessageProxy;
 import de.ddm.serialization.AkkaSerializable;
 import lombok.AllArgsConstructor;
@@ -42,15 +43,20 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		private static final long serialVersionUID = -4667745204456518160L;
 		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
 		int task;
+		//IndexClassColumn referencedVal; //TODO: update Constructor in DependencyMiner
+		//IndexClassColumn dependencyVal;
+
 	}
 
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class ResultMessage implements Message {
+	public static class tempMessage implements Message {
 		private static final long serialVersionUID = 5128375631926163648L;
 		//TODO: Datendastellung -> hier referenzierte Column, die mit interdependenten Datencolumn gematcht wurde
 		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
+		int result;
+		//this.getContext().getSelf() ??????????????? ich hasse Java....
 	}
 
 	@NoArgsConstructor
@@ -92,7 +98,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		return newReceiveBuilder()
 				.onMessage(ReceptionistListingMessage.class, this::handle)
 				.onMessage(TaskMessage.class, this::handle)
-				.onMessage(ResultMessage.class, this::handle)
+				.onMessage(tempMessage.class, this::handle)
 				.onMessage(ShutdownMessage.class, this::handle)
 				.build();
 	}
@@ -105,9 +111,8 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	}
 
 	private Behavior<Message> handle(TaskMessage message) {
-		this.getContext().getLog().info("Working!");
-		// I should probably know how to solve this task, but for now I just pretend some work...
-
+		this.getContext().getLog().info("Work in progress!");
+		//TODO: implement!
 		int result = message.getTask();
 		long time = System.currentTimeMillis();
 		Random rand = new Random();
@@ -115,7 +120,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		while (System.currentTimeMillis() - time < runtime)
 			result = ((int) Math.abs(Math.sqrt(result)) * result) % 1334525;
 
-		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(), result);
+		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(),result);
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(completionMessage, message.getDependencyMinerLargeMessageProxy()));
 
 		return this;
@@ -125,7 +130,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		return Behaviors.stopped();
 	}
 
-	private Behavior<Message> handle(ResultMessage message) {
+	private Behavior<Message> handle(tempMessage message) {
 		//TODO: implement!
 		return this;
 	}

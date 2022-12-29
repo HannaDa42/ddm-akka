@@ -32,6 +32,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorOccupationMap = new HashMap<>();
 	// file representation
 	String[][][] fileRepresentation;
+	DataProvider dataprov;
 
 	////////////////////
 	// Actor Messages //
@@ -91,9 +92,9 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	public static class CompletionMessage implements Message {															// C
 		private static final long serialVersionUID = -7642425159675583598L;
 		ActorRef<DependencyWorker.Message> dependencyWorker;
-		IndexClassColumn referencedColumnIdSingle;
-		IndexClassColumn dependentColumnIdSingle;
-		boolean candidate;
+		//IndexClassColumn referencedColumnIdSingle; //TODO: Update Constructor in DependencyWorker
+		//IndexClassColumn dependentColumnIdSingle;
+		//boolean candidate;
 		int id;
 	}
 

@@ -28,7 +28,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	Map<Integer, List<Set<String>>> idContentMap = new HashMap<>();
 	Map<Integer, Boolean> filteredMap = new HashMap<>();
 	// actor ref
-	Map<ActorRef<DependencyWorker.Message>, ColumnId> actorColumnMap = new HashMap<>();
+	Map<ActorRef<DependencyWorker.Message>, IndexClassColumn> actorColumnMap = new HashMap<>();
 	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorOccupationMap = new HashMap<>();
 	// file representation
 	String[][][] fileRepresentation;
@@ -77,8 +77,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	public static class RequestDataMessage implements Message {															// C
 		private static final long serialVersionUID = 868083729453247423L;
 		ActorRef<LargeMessageProxy.Message> dependencyWorkerReceiverProxy;
-		ColumnId referencedColumnIdSingle;
-		ColumnId dependentColumnIdSingle;
+		IndexClassColumn referencedColumnIdSingle;
+		IndexClassColumn dependentColumnIdSingle;
 		int dependentFrom;
 		int dependentTo;
 		boolean referencedColumn;
@@ -91,8 +91,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	public static class CompletionMessage implements Message {															// C
 		private static final long serialVersionUID = -7642425159675583598L;
 		ActorRef<DependencyWorker.Message> dependencyWorker;
-		ColumnId referencedColumnIdSingle;
-		ColumnId dependentColumnIdSingle;
+		IndexClassColumn referencedColumnIdSingle;
+		IndexClassColumn dependentColumnIdSingle;
 		boolean candidate;
 		int id;
 	}

@@ -7,6 +7,7 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
+import akka.remote.ShutDownAssociation;
 import de.ddm.actors.patterns.LargeMessageProxy;
 import de.ddm.serialization.AkkaSerializable;
 import lombok.AllArgsConstructor;
@@ -51,6 +52,11 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		//TODO: Datendastellung -> hier referenzierte Column, die mit interdependenten Datencolumn gematcht wurde
 	}
 
+	@NoArgsConstructor
+	public static class ShutdownMessage implements Message {
+		private static final long serialVersionUID = -347634204183719946L;
+	}
+
 	////////////////////////
 	// Actor Construction //
 	////////////////////////
@@ -85,6 +91,8 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		return newReceiveBuilder()
 				.onMessage(ReceptionistListingMessage.class, this::handle)
 				.onMessage(TaskMessage.class, this::handle)
+				.onMessage(ResultMessage.class, this::handle)
+				.onMessage(ShutdownMessage.class, this::handle)
 				.build();
 	}
 
@@ -109,6 +117,15 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(), result);
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(completionMessage, message.getDependencyMinerLargeMessageProxy()));
 
+		return this;
+	}
+
+	private Behavior<Message> handle(ShutdownMessage message) {
+		return Behaviors.stopped();
+	}
+
+	private Behavior<Message> handle(ResultMessage message) {
+		//TODO: implement!
 		return this;
 	}
 }

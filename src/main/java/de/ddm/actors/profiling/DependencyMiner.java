@@ -72,6 +72,9 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		int result;
 	}
 
+	//where is data requested? where does the data come from?
+	//shutdown message is missing -> is it required?
+
 	////////////////////////
 	// Actor Construction //
 	////////////////////////
@@ -104,7 +107,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	/////////////////
 	// Actor State //
 	/////////////////
-
+	//TODO: Master-Worker Pattern is not yet implemented here
 	private long startTime;
 
 	private final boolean discoverNaryDependencies;
@@ -116,6 +119,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	private final ActorRef<LargeMessageProxy.Message> largeMessageProxy;
 
 	private final List<ActorRef<DependencyWorker.Message>> dependencyWorkers;
+
+
 
 	////////////////////
 	// Actor Behavior //
@@ -149,7 +154,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	private Behavior<Message> handle(BatchMessage message) {
 		// Ignoring batch content for now ... but I could do so much with it.
-
+		//TODO: implement meaningful messages here
 		if (message.getBatch().size() != 0)
 			this.inputReaders.get(message.getId()).tell(new InputReader.ReadBatchMessage(this.getContext().getSelf()));
 		return this;
@@ -162,7 +167,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 			this.getContext().watch(dependencyWorker);
 			// The worker should get some work ... let me send her something before I figure out what I actually want from her.
 			// I probably need to idle the worker for a while, if I do not have work for it right now ... (see master/worker pattern)
-
+			//TODO: if we have workers that do work, send message; implement TaskMessage (aka tasks -> wie werden Tasks verteilt?) here; initialize dependency workers
 			dependencyWorker.tell(new DependencyWorker.TaskMessage(this.largeMessageProxy, 42));
 		}
 		return this;
@@ -171,7 +176,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	private Behavior<Message> handle(CompletionMessage message) {
 		ActorRef<DependencyWorker.Message> dependencyWorker = message.getDependencyWorker();
 		// If this was a reasonable result, I would probably do something with it and potentially generate more work ... for now, let's just generate a random, binary IND.
-
+		//TODO: more work, interpret ist, tell result collector the result collection
 		if (this.headerLines[0] != null) {
 			Random random = new Random();
 			int dependent = random.nextInt(this.inputFiles.length);
@@ -192,6 +197,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		dependencyWorker.tell(new DependencyWorker.TaskMessage(this.largeMessageProxy, 42));
 
 		// At some point, I am done with the discovery. That is when I should call my end method. Because I do not work on a completable task yet, I simply call it after some time.
+		//TODO: shutdown when result is calculated, not after a set time; shutdowm all workers (-> shutdown protocol)
 		if (System.currentTimeMillis() - this.startTime > 2000000)
 			this.end();
 		return this;

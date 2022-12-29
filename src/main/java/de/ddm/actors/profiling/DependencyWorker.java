@@ -25,6 +25,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	public interface Message extends AkkaSerializable {
 	}
 
+
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
@@ -40,6 +41,14 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		private static final long serialVersionUID = -4667745204456518160L;
 		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
 		int task;
+	}
+
+	@Getter
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class ResultMessage implements Message {
+		private static final long serialVersionUID = 5128375631926163648L;
+		//TODO: Datendastellung -> hier referenzierte Column, die mit interdependenten Datencolumn gematcht wurde
 	}
 
 	////////////////////////

@@ -62,11 +62,14 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		String[] valuesDep;
 		int result;
 	}
-
+	//shutdown message is missing! --> added know!
 	@NoArgsConstructor
 	public static class ShutdownMessage implements Message {
-		private static final long serialVersionUID = -347634204183719946L;
+		private static final long serialVersionUID = -1208833352862186050L;
 	}
+
+
+
 
 	////////////////////////
 	// Actor Construction //
@@ -105,7 +108,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 				.onMessage(ReceptionistListingMessage.class, this::handle)
 				.onMessage(TaskMessage.class, this::handle)
 				.onMessage(tempMessage.class, this::handle)
-				.onMessage(ShutdownMessage.class, this::handle)
+				.onMessage(ShutdownMessage.class, this::handle) // shutdown !
 				.build();
 	}
 

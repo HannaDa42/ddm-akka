@@ -9,6 +9,7 @@ import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 import de.ddm.IndexUnaryIND;
+import de.ddm.actors.Master;
 import de.ddm.actors.patterns.LargeMessageProxy;
 import de.ddm.IndexClassColumn;
 import de.ddm.serialization.AkkaSerializable;
@@ -99,7 +100,16 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	//data request
-	//shutdown message is missing!
+
+
+
+	//shutdown message is missing! --> added know!
+	@NoArgsConstructor
+	public static class ShutdownMessage implements Message {
+		private static final long serialVersionUID = 294532486808377423L;
+	}
+
+
 
 	////////////////////////
 	// Actor Construction //
@@ -166,6 +176,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				.onMessage(StartMessage.class, this::handle)
 				.onMessage(BatchMessage.class, this::handle)
 				.onMessage(HeaderMessage.class, this::handle)
+				.onMessage(ShutdownMessage.class, this::handle) // shutdown !
 				.onMessage(RegistrationMessage.class, this::handle)
 				.onMessage(CompletionMessage.class, this::handle)
 				.onMessage(RequestDataMessage.class, this::handle)
@@ -227,6 +238,10 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	private Behavior<Message> handle(RequestDataMessage message) {
 		return this; //TODO: implement
 	}
+	//shutdown handling!!
+	private Behavior<Message> handle(ShutdownMessage message) {
+		return Behaviors.stopped();
+	}
 
 	private void end() {
 		this.resultCollector.tell(new ResultCollector.FinalizeMessage());
@@ -239,6 +254,4 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.dependencyWorkers.remove(dependencyWorker);
 		return this;
 	}
-
-
 }

@@ -45,8 +45,11 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		private static final long serialVersionUID = -4667745204456518160L;
 		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
 		int task;
-		//IndexClassColumn referencedVal; //TODO: update Constructor in DependencyMiner
-		//IndexClassColumn dependencyVal;
+		IndexClassColumn referencedVal;
+		IndexClassColumn dependencyVal;
+		int colThis;
+		int colThat;
+
 
 	}
 
@@ -127,7 +130,8 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		while (System.currentTimeMillis() - time < runtime)
 			result = ((int) Math.abs(Math.sqrt(result)) * result) % 1334525;
 
-		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(),result);
+		//LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(),result);
+		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(); //TODO: intialize with parameters!
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(completionMessage, message.getDependencyMinerLargeMessageProxy()));
 
 		return this;
@@ -143,7 +147,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		IndexClassColumn rv = message.getReferencedVal();
 		this.referencedValues.clear();
 		this.referencedValues.put(rv, message.getValuesRef());
-		//this.getContext().getLog().info((this.referencedValues.toString()));
+		this.getContext().getLog().info((this.referencedValues.toString()));
 
 		return this;
 	}

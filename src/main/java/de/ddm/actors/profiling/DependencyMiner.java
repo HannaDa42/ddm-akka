@@ -8,6 +8,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
+import de.ddm.IndexUnaryIND;
 import de.ddm.actors.patterns.LargeMessageProxy;
 import de.ddm.IndexClassColumn;
 import de.ddm.serialization.AkkaSerializable;
@@ -31,8 +32,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	Map<ActorRef<DependencyWorker.Message>, IndexClassColumn> actorColumnMap = new HashMap<>();
 	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorOccupationMap = new HashMap<>();
 	// file representation
-	String[][][] fileRepresentation;
-	DataProvider dataprov; //TODO: mit DataProvider verknüpfen
+
 
 	////////////////////
 	// Actor Messages //
@@ -92,10 +92,10 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	public static class CompletionMessage implements Message {															// C
 		private static final long serialVersionUID = -7642425159675583598L;
 		ActorRef<DependencyWorker.Message> dependencyWorker;
-		//IndexClassColumn referencedColumnIdSingle; //TODO: Update Constructor in DependencyWorker
-		//IndexClassColumn dependentColumnIdSingle;
-		//boolean candidate;
 		int id;
+		IndexClassColumn referencedColumnIdSingle;
+		IndexClassColumn dependentColumnIdSingle;
+		boolean candidate;
 	}
 
 	//data request
@@ -120,7 +120,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.headerLines = new String[this.inputFiles.length][];
 		this.fileRepresentation = new String[this.inputFiles.length][][];												// C
 		///!!!!
-
+		this.dataprov = null;
 
 		this.inputReaders = new ArrayList<>(inputFiles.length);
 		for (int id = 0; id < this.inputFiles.length; id++)
@@ -131,6 +131,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.dependencyWorkers = new ArrayList<>();
 
 		context.getSystem().receptionist().tell(Receptionist.register(dependencyMinerService, context.getSelf()));
+
 	}
 
 	/////////////////
@@ -142,11 +143,16 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	private final File[] inputFiles;
 	private final String[][] headerLines;
 
+	private final String[][][] fileRepresentation;
+
 	private final List<ActorRef<InputReader.Message>> inputReaders;
 	private final ActorRef<ResultCollector.Message> resultCollector;
 	private final ActorRef<LargeMessageProxy.Message> largeMessageProxy;
 
 	private final List<ActorRef<DependencyWorker.Message>> dependencyWorkers;
+
+
+	private final DataProvider dataprov;
 
 
 
@@ -194,41 +200,27 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		if (!this.dependencyWorkers.contains(dependencyWorker)) {
 			this.dependencyWorkers.add(dependencyWorker);
 			this.getContext().watch(dependencyWorker);
-			// The worker should get some work ... let me send her something before I figure out what I actually want from her.
-			// I probably need to idle the worker for a while, if I do not have work for it right now ... (see master/worker pattern)
-			//TODO: if we have workers that do work, send message; implement TaskMessage (aka tasks -> wie werden Tasks verteilt?) here; initialize dependency workers
-			dependencyWorker.tell(new DependencyWorker.TaskMessage(this.largeMessageProxy, 42));
+			//TODO: Taskmessages weiterleiten; Hilfsfunktion implementieren!
 		}
 		return this;
 	}
 
 	private Behavior<Message> handle(CompletionMessage message) {
 		ActorRef<DependencyWorker.Message> dependencyWorker = message.getDependencyWorker();
-		// If this was a reasonable result, I would probably do something with it and potentially generate more work ... for now, let's just generate a random, binary IND.
-		//TODO: more work, interpret ist, tell result collector the result collection
-		if (this.headerLines[0] != null) {
-			Random random = new Random();
-			int dependent = random.nextInt(this.inputFiles.length);
-			int referenced = random.nextInt(this.inputFiles.length);
-			File dependentFile = this.inputFiles[dependent];
-			File referencedFile = this.inputFiles[referenced];
-			String[] dependentAttributes = {this.headerLines[dependent][random.nextInt(this.headerLines[dependent].length)], this.headerLines[dependent][random.nextInt(this.headerLines[dependent].length)]};
-			String[] referencedAttributes = {this.headerLines[referenced][random.nextInt(this.headerLines[referenced].length)], this.headerLines[referenced][random.nextInt(this.headerLines[referenced].length)]};
-			InclusionDependency ind = new InclusionDependency(dependentFile, dependentAttributes, referencedFile, referencedAttributes);
-			List<InclusionDependency> inds = new ArrayList<>(1);
-			inds.add(ind);
+		InclusionDependency ind = this.dataprov.handle(message, (IndexClassColumn referencedColumnId, IndexClassColumn dependentColumnId) -> {
+					File referencedFile = this.inputFiles[referencedColumnId.getFile()];
+					File dependentFile = this.inputFiles[dependentColumnId.getFile()];
+					String referencedAttribute = this.headerLines[referencedColumnId.getFile()][referencedColumnId.getColumn()];
+					String dependentAttribute = this.headerLines[dependentColumnId.getFile()][dependentColumnId.getColumn()];
+					return new InclusionDependency(dependentFile, new String[]{dependentAttribute}, referencedFile, new String[]{referencedAttribute});
+				});
 
-			this.resultCollector.tell(new ResultCollector.ResultMessage(inds));
-		}
-		// I still don't know what task the worker could help me to solve ... but let me keep her busy.
-		// Once I found all unary INDs, I could check if this.discoverNaryDependencies is set to true and try to detect n-ary INDs as well!
 
-		dependencyWorker.tell(new DependencyWorker.TaskMessage(this.largeMessageProxy, 42));
+		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
+		//TODO: Nary Deps beruecksichtigen!
 
-		// At some point, I am done with the discovery. That is when I should call my end method. Because I do not work on a completable task yet, I simply call it after some time.
-		//TODO: shutdown when result is calculated, not after a set time; shutdowm all workers (-> shutdown protocol)
-		if (System.currentTimeMillis() - this.startTime > 2000000)
-			this.end();
+
+		this.getContext().getLog().info("CompletionMessage:");
 		return this;
 	}
 
@@ -247,4 +239,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.dependencyWorkers.remove(dependencyWorker);
 		return this;
 	}
+
+
 }

@@ -3,11 +3,16 @@ package de.ddm;
 import akka.actor.typed.ActorRef;
 import de.ddm.actors.profiling.DependencyMiner;
 import de.ddm.actors.profiling.DependencyWorker;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.*;
 import java.util.function.Consumer;
 
 // generate actors
+@Getter
+@AllArgsConstructor
 public class UnaryIND implements Iterator<DependencyWorker.TaskMessage> {
     //Jobs assignment list
     Map<IndexUnaryIND, Integer> tempMap = new HashMap<>();
@@ -73,7 +78,7 @@ public class UnaryIND implements Iterator<DependencyWorker.TaskMessage> {
             int batchStart = batchIndex;
             int batchEnd = Math.min(batchIndex + batchSize, colSize);
             //build taskMessage
-            DependencyWorker.TaskMessage msg = new DependencyWorker.TaskMessage(depMinRef, referencedVal, dependencyVal, batchIndex, batchEnd, msgIndex++);
+            DependencyWorker.TaskMessage msg = new DependencyWorker.TaskMessage(depMinRef, msgIndex++, referencedVal, dependencyVal, batchIndex, batchEnd);
             batchIndex = batchEnd;
 
             //check if batch is useful

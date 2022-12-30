@@ -122,18 +122,11 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 
 	private Behavior<Message> handle(TaskMessage message) {
 		this.getContext().getLog().info("Work in progress!");
-		//TODO: implement!
-		int result = message.getTask();
-		long time = System.currentTimeMillis();
-		Random rand = new Random();
-		int runtime = (rand.nextInt(2) + 2) * 1000;
-		while (System.currentTimeMillis() - time < runtime)
-			result = ((int) Math.abs(Math.sqrt(result)) * result) % 1334525;
-
-		//LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(),result);
-		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.CompletionMessage(); //TODO: intialize with parameters!
-		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(completionMessage, message.getDependencyMinerLargeMessageProxy()));
-
+		boolean isRefCol = this.referencedValues.containsKey(message.getReferencedVal());
+		IndexClassColumn refCol= message.getReferencedVal();
+		IndexClassColumn depCol = message.getDependencyVal();
+		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.RequestDataMessage(this.largeMessageProxy, refCol, depCol, message.colThis, message.colThat, isRefCol, message.getTask());
+		message.dependencyMinerLargeMessageProxy.tell((LargeMessageProxy.Message) completionMessage);
 		return this;
 	}
 

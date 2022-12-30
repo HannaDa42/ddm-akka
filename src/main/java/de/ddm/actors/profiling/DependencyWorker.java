@@ -43,7 +43,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	@AllArgsConstructor
 	public static class TaskMessage implements Message {
 		private static final long serialVersionUID = -4667745204456518160L;
-		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
+		ActorRef<DependencyMiner.Message> dependencyMinerLargeMessageProxy;
 		int task;
 		IndexClassColumn referencedVal;
 		IndexClassColumn dependencyVal;

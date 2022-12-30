@@ -15,10 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message> {
 
@@ -58,7 +55,6 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	@AllArgsConstructor
 	public static class tempMessage implements Message {
 		private static final long serialVersionUID = 5128375631926163648L;
-		//TODO: Datendarstellung -> hier referenzierte Column, die mit interdependenten (values betrachten!!!) Datencolumn gematcht wurde
 		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
 		IndexClassColumn referencedVal;
 		IndexClassColumn dependencyVal;
@@ -135,13 +131,19 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	}
 
 	private Behavior<Message> handle(tempMessage message) {
-		//TODO: implement!
-		int result = message.getResult();
 		IndexClassColumn rv = message.getReferencedVal();
+		int result = message.getResult();
 		this.referencedValues.clear();
 		this.referencedValues.put(rv, message.getValuesRef());
 		this.getContext().getLog().info((this.referencedValues.toString()));
-
+		String[] refCol = this.referencedValues.get(message.getReferencedVal());
+		String[] depCol = message.valuesDep;
+		boolean bTemp = false;
+		for (String someStr : depCol) {
+			if (0 > Arrays.binarySearch(refCol, someStr)) {bTemp = false; break;} else {bTemp = true;}
+		}
+		DependencyMiner.CompletionMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(), message.getResult(), message.getReferencedVal(), message.getDependencyVal(), bTemp);
+		message.getDependencyMinerLargeMessageProxy().tell((LargeMessageProxy.Message) completionMessage);
 		return this;
 	}
 }

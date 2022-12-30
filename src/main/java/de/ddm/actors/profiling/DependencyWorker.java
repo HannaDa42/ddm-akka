@@ -15,6 +15,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -53,10 +55,13 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	@AllArgsConstructor
 	public static class tempMessage implements Message {
 		private static final long serialVersionUID = 5128375631926163648L;
-		//TODO: Datendastellung -> hier referenzierte Column, die mit interdependenten Datencolumn gematcht wurde
+		//TODO: Datendarstellung -> hier referenzierte Column, die mit interdependenten (values betrachten!!!) Datencolumn gematcht wurde
 		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
+		IndexClassColumn referencedVal;
+		IndexClassColumn dependencyVal;
+		String[] valuesRef;
+		String[] valuesDep;
 		int result;
-		//this.getContext().getSelf() ??????????????? ich hasse Java....
 	}
 
 	@NoArgsConstructor
@@ -68,6 +73,8 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	// Actor Construction //
 	////////////////////////
 
+	//private final Map<IndexClassColumn, IndexClassColumn> referencedCols = new HashMap<>();
+	private final Map<IndexClassColumn, String[]> referencedValues = new HashMap<>();
 	public static final String DEFAULT_NAME = "dependencyWorker";
 
 	public static Behavior<Message> create() {
@@ -132,6 +139,12 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 
 	private Behavior<Message> handle(tempMessage message) {
 		//TODO: implement!
+		int result = message.getResult();
+		IndexClassColumn rv = message.getReferencedVal();
+		this.referencedValues.clear();
+		this.referencedValues.put(rv, message.getValuesRef());
+		//this.getContext().getLog().info((this.referencedValues.toString()));
+
 		return this;
 	}
 }

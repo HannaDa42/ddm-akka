@@ -31,7 +31,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	Map<ActorRef<DependencyWorker.Message>, IndexClassColumn> actorColumnMap = new HashMap<>();
 	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorOccupationMap = new HashMap<>();
 	// file representation
-	String[][][] fileRepresentation; //TODO: ?
+	String[][][] fileRepresentation;
 	DataProvider dataprov; //TODO: mit DataProvider verknüpfen
 
 	////////////////////
@@ -111,7 +111,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	public static Behavior<Message> create() {
 		return Behaviors.setup(DependencyMiner::new);
-	}							// C
+	}																													// C
 
 	private DependencyMiner(ActorContext<Message> context) {
 		super(context);
@@ -136,7 +136,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	/////////////////
 	// Actor State //
 	/////////////////
-	//TODO: Master-Worker Pattern is not yet implemented here
 	private long startTime;
 
 	private final boolean discoverNaryDependencies;
@@ -163,6 +162,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				.onMessage(HeaderMessage.class, this::handle)
 				.onMessage(RegistrationMessage.class, this::handle)
 				.onMessage(CompletionMessage.class, this::handle)
+				.onMessage(RequestDataMessage.class, this::handle)
 				.onSignal(Terminated.class, this::handle)
 				.build();
 	}
@@ -230,6 +230,10 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		if (System.currentTimeMillis() - this.startTime > 2000000)
 			this.end();
 		return this;
+	}
+
+	private Behavior<Message> handle(RequestDataMessage message) {
+		return this; //TODO: implement
 	}
 
 	private void end() {

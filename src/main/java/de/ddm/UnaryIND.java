@@ -5,7 +5,6 @@ import de.ddm.actors.profiling.DependencyMiner;
 import de.ddm.actors.profiling.DependencyWorker;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -23,12 +22,11 @@ public class UnaryIND implements Iterator<DependencyWorker.TaskMessage> {
     DependencyWorker.TaskMessage workload;
     final String[][][] fileColRefList;
 
-
     // Raspberry Pi Batch Size?
     int batchIndex = 0;
     int msgIndex = 0;
     final int batchSize = 5000;
-    IndexClassColumn referencedVal;
+    public IndexClassColumn referencedVal;
 
     //Dependency Miner
     final ActorRef<DependencyMiner.Message> depMinRef;

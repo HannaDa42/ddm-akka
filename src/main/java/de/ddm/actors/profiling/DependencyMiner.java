@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
-import de.ddm.IndexUnaryIND;
+import de.ddm.UnaryIND;
 import de.ddm.actors.patterns.LargeMessageProxy;
 import de.ddm.IndexClassColumn;
 import de.ddm.serialization.AkkaSerializable;
@@ -98,7 +98,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		boolean candidate;
 	}
 
-	//data request
 	//shutdown message is missing!
 
 	////////////////////////
@@ -120,8 +119,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.headerLines = new String[this.inputFiles.length][];
 		this.fileRepresentation = new String[this.inputFiles.length][][];												// C
 		///!!!!
-		this.dataprov = null;
-
+		this.dataprov = new DataProvider(this.getContext().getSelf(), fileRepresentation, indDistributor);
 		this.inputReaders = new ArrayList<>(inputFiles.length);
 		for (int id = 0; id < this.inputFiles.length; id++)
 			this.inputReaders.add(context.spawn(InputReader.create(id, this.inputFiles[id]), InputReader.DEFAULT_NAME + "_" + id));
@@ -160,6 +158,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	// Actor Behavior //
 	////////////////////
 
+
 	@Override
 	public Receive<Message> createReceive() {
 		return newReceiveBuilder()
@@ -189,7 +188,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	private Behavior<Message> handle(BatchMessage message) {
 		// Ignoring batch content for now ... but I could do so much with it.
-		//TODO: implement meaningful messages here
+		//TODO: implement meaningful messages here -> ????
+		//TODO: dataprovider -> add new Data; fix costructor!
 		if (message.getBatch().size() != 0)
 			this.inputReaders.get(message.getId()).tell(new InputReader.ReadBatchMessage(this.getContext().getSelf()));
 		return this;
@@ -214,8 +214,9 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 					String dependentAttribute = this.headerLines[dependentColumnId.getFile()][dependentColumnId.getColumn()];
 					return new InclusionDependency(dependentFile, new String[]{dependentAttribute}, referencedFile, new String[]{referencedAttribute});
 				});
-
-
+		if (ind != null){
+			this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
+		}
 		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		//TODO: Nary Deps beruecksichtigen!
 
@@ -225,6 +226,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(RequestDataMessage message) {
+		this.getContext().getLog().info("RequestDataMessage:");
+		ActorRef<LargeMessageProxy.Message> receiverProxy = message.dependencyWorkerReceiverProxy;
 		return this; //TODO: implement
 	}
 
@@ -236,6 +239,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	private Behavior<Message> handle(Terminated signal) {
 		ActorRef<DependencyWorker.Message> dependencyWorker = signal.getRef().unsafeUpcast();
+		List<DependencyWorker.TaskMessage> taskMessages = this.actorOccupationMap.remove(dependencyWorker);
+		this.actorColumnMap.remove(dependencyWorker);
 		this.dependencyWorkers.remove(dependencyWorker);
 		return this;
 	}

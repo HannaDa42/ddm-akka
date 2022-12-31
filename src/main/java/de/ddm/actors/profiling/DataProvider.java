@@ -2,15 +2,13 @@ package de.ddm.actors.profiling;
 import akka.actor.typed.ActorRef;
 import de.ddm.IndexClassColumn;
 import de.ddm.IndexUnaryIND;
+import de.ddm.UnaryIND;
 import de.ddm.actors.patterns.LargeMessageProxy;
 import de.ddm.serialization.AkkaSerializable;
 import de.ddm.structures.InclusionDependency;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 
 public class DataProvider {
@@ -18,17 +16,22 @@ public class DataProvider {
     //TODO: (col ref und col dep?) sinnvoll weiterleiten; depMiner verteilt an DepWorker; hier: inclusionDep verwenden (-> hashing!!!!)
     public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
     }
+    private ActorRef<DependencyMiner.Message> messageDepMiner;
+    Map<IndexUnaryIND, Integer> tempMap = new HashMap<>();
+    private final String[][][] fileRef;
+    Map<IndexClassColumn, UnaryIND> indDistributor = new HashMap<>();
 
     @NoArgsConstructor
     public static class StartMessage implements Message {
         private static final long serialVersionUID = -6164879298754451870L;
     }
-    private ActorRef<DependencyMiner.Message> messageDepMiner;
-    Map<IndexUnaryIND, Integer> tempMap = new HashMap<>();
 
-    public DataProvider(ActorRef<DependencyMiner.Message> arg){
+
+    public DataProvider(ActorRef<DependencyMiner.Message> arg, String[][][] file, UnaryIND indDistributor){
         this.messageDepMiner = arg;
+        this.fileRef = file;
     }
+
     public InclusionDependency handle(DependencyMiner.CompletionMessage messageDepMiner,DepMapper mapper) {
         IndexUnaryIND indexedId = new IndexUnaryIND(messageDepMiner.getReferencedColumnIdSingle(),messageDepMiner.getDependentColumnIdSingle());
         if(messageDepMiner.isCandidate()) {
@@ -42,6 +45,28 @@ public class DataProvider {
         }
         tempMap.remove(indexedId);
         return null;
-        }
+    }
 
+    Queue<IndexClassColumn> nextColQ = new PriorityQueue<>();
+    Queue<IndexClassColumn> unmatchedColQ = new LinkedList<>();
+    public int add_data (int id, int noCols) {
+        for (int i = 0; i < noCols; i++) {
+            IndexClassColumn colId = new IndexClassColumn(id, i);
+            for (UnaryIND un : this.indDistributor.values()) {
+                if (colId.getFile() != un.referencedVal.getFile()) {
+                    this.unmatchedColQ.offer(colId);
+                }
+            }
+            UnaryIND uindTemp = new UnaryIND(colId,messageDepMiner,fileRef);
+            for (IndexClassColumn dep : this.indDistributor.keySet()) {
+                if (dep.getFile() != uindTemp.referencedVal.getFile()) {
+                    this.unmatchedColQ.offer(dep);
+                }
+            }
+            this.indDistributor.put(colId, uindTemp);
+            this.nextColQ.clear();
+            this.nextColQ.addAll(this.indDistributor.keySet());
+        }
+        return 0;
+    }
 }

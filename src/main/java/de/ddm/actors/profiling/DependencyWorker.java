@@ -46,8 +46,6 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		IndexClassColumn dependencyVal;
 		int colThis;
 		int colThat;
-
-
 	}
 
 	@Getter
@@ -122,7 +120,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		IndexClassColumn refCol= message.getReferencedVal();
 		IndexClassColumn depCol = message.getDependencyVal();
 		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.RequestDataMessage(this.largeMessageProxy, refCol, depCol, message.colThis, message.colThat, isRefCol, message.getTask());
-		message.dependencyMinerLargeMessageProxy.tell((LargeMessageProxy.Message) completionMessage);
+		message.dependencyMinerLargeMessageProxy.tell((DependencyMiner.Message) completionMessage);
 		return this;
 	}
 

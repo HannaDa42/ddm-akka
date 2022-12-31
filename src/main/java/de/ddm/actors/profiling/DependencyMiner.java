@@ -37,18 +37,18 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	// Actor Messages //
 	////////////////////
 
-	public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {									// C
+	public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
 	}
 
 	@NoArgsConstructor
-	public static class StartMessage implements Message {																// C
+	public static class StartMessage implements Message {
 		private static final long serialVersionUID = -1963913294517850454L;
 	}
 
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class HeaderMessage implements Message {																// C
+	public static class HeaderMessage implements Message {
 		private static final long serialVersionUID = -5322425954432915838L;
 		int id;
 		String[] header;
@@ -57,7 +57,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class BatchMessage implements Message {																// C
+	public static class BatchMessage implements Message {
 		private static final long serialVersionUID = 4591192372652568030L;
 		int id;
 		List<String[]> batch;
@@ -66,7 +66,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class RegistrationMessage implements Message {														// C
+	public static class RegistrationMessage implements Message {
 		private static final long serialVersionUID = -4025238529984914107L;
 		ActorRef<DependencyWorker.Message> dependencyWorker;
 	}
@@ -74,7 +74,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class RequestDataMessage implements Message {															// C
+	public static class RequestDataMessage implements Message {
 		private static final long serialVersionUID = 868083729453247423L;
 		ActorRef<LargeMessageProxy.Message> dependencyWorkerReceiverProxy;
 		IndexClassColumn refIndex;
@@ -88,7 +88,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class CompletionMessage implements Message {															// C
+	public static class CompletionMessage implements Message {
 		private static final long serialVersionUID = -7642425159675583598L;
 		ActorRef<DependencyWorker.Message> dependencyWorker;
 		int id;
@@ -97,7 +97,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		boolean candidate;
 	}
 
-	//shutdown message is missing! --> added know!
+	//TODO: shutdown message is missing! --> added know!
 	@NoArgsConstructor
 	public static class ShutdownMessage implements Message {
 		private static final long serialVersionUID = 294532486808377423L;
@@ -108,19 +108,19 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	// Actor Construction //
 	////////////////////////
 
-	public static final String DEFAULT_NAME = "dependencyMiner";														// C
+	public static final String DEFAULT_NAME = "dependencyMiner";
 
-	public static final ServiceKey<DependencyMiner.Message> dependencyMinerService = ServiceKey.create(DependencyMiner.Message.class, DEFAULT_NAME + "Service"); // C
+	public static final ServiceKey<DependencyMiner.Message> dependencyMinerService = ServiceKey.create(DependencyMiner.Message.class, DEFAULT_NAME + "Service");
 
-	public static Behavior<Message> create() {return Behaviors.setup(DependencyMiner::new);}																													// C
+	public static Behavior<Message> create() {return Behaviors.setup(DependencyMiner::new);}
 
 	private DependencyMiner(ActorContext<Message> context) {
 		super(context);
 		this.discoverNaryDependencies = SystemConfigurationSingleton.get().isHardMode();
 		this.inputFiles = InputConfigurationSingleton.get().getInputFiles();
 		this.headerLines = new String[this.inputFiles.length][];
-		this.fileRepresentation = new String[this.inputFiles.length][][];												// C
-		///!!!!
+		this.fileRepresentation = new String[this.inputFiles.length][][];
+		///TODO: !!!!
 		this.dataprov = new DataProvider(this.getContext().getSelf(), fileRepresentation, indDistributor);
 		this.inputReaders = new ArrayList<>(inputFiles.length);
 		for (int id = 0; id < this.inputFiles.length; id++){this.idContentMap.put(id, new ArrayList<>());
@@ -168,7 +168,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				.onMessage(StartMessage.class, this::handle)
 				.onMessage(BatchMessage.class, this::handle)
 				.onMessage(HeaderMessage.class, this::handle)
-				.onMessage(ShutdownMessage.class, this::handle) // shutdown !
+				.onMessage(ShutdownMessage.class, this::handle) //TODO: shutdown ! -> done
 				.onMessage(RegistrationMessage.class, this::handle)
 				.onMessage(CompletionMessage.class, this::handle)
 				.onMessage(RequestDataMessage.class, this::handle)
@@ -205,10 +205,10 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 			final int jobLeng = message.batch.get(0).length;
 
 			for(int i = 0; i < jobLeng; i++) {
-				Set<String> batchMsgTree = new TreeSet<>(); //column
+				Set<String> batchMsgTree = new TreeSet<>();
 				//build the batch set
 				for(int j = 0; j < batchSize; j++) {batchMsgTree.add(message.batch.get(j)[i]);}
-				List<Set<String>> list = idContentMap.get(message.id); //columnList
+				List<Set<String>> list = idContentMap.get(message.id);
 
 
 				//insert top element or full tree
@@ -220,14 +220,14 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		} else {
 			//boolean check
 			filteredMap.put(message.id, true);
-			List<Set<String>> contentMap = idContentMap.get(message.id); //columns
+			List<Set<String>> contentMap = idContentMap.get(message.id);
 			int mapSize = contentMap.size();
 			//representing array
-			fileRepresentation[message.id] = new String[mapSize][]; //alternativeFileRepresentation
+			fileRepresentation[message.id] = new String[mapSize][];
 
 			for(int i = 0; i<mapSize; i++) {
 				//transformation
-				String[] data = contentMap.get(i).toArray(new String[0]); //column
+				String[] data = contentMap.get(i).toArray(new String[0]);
 				//sort for unary IND
 				Arrays.sort(data);
 				fileRepresentation[message.id][i] = data;

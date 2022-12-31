@@ -19,13 +19,12 @@ public class DataProvider {
         return next;
     }
 
-    //TODO: (col ref und col dep?) sinnvoll weiterleiten; depMiner verteilt an DepWorker; hier: inclusionDep verwenden (-> hashing!!!!)
     public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
     }
-    private ActorRef<DependencyMiner.Message> messageDepMiner; //dependencyMinerRef
+    private ActorRef<DependencyMiner.Message> messageDepMiner;
     Map<IndexUnaryIND, Integer> tempMap = new HashMap<>();
     private final String[][][] fileRef;
-    Map<IndexClassColumn, UnaryIND> indDistributor = new HashMap<>(); //columnToTaskCounter
+    Map<IndexClassColumn, UnaryIND> indDistributor = new HashMap<>();
 
     @NoArgsConstructor
     public static class StartMessage implements Message {
@@ -38,7 +37,7 @@ public class DataProvider {
         this.fileRef = file;
     }
 
-    Queue<IndexClassColumn> nextRef = new LinkedList<>(); //nextReferencedColumnId
+    Queue<IndexClassColumn> nextRef = new LinkedList<>();
     public boolean new_job_bool() {
         boolean new_task = this.nextRef.stream().anyMatch((id) -> this.indDistributor.get(id).hasNext());
         return new_task;

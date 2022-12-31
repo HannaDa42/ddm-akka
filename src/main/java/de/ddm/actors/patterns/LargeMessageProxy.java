@@ -4,8 +4,10 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
+import de.ddm.actors.profiling.DependencyWorker;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
+import de.ddm.actors.profiling.DependencyMiner;
 import akka.serialization.Serialization;
 import akka.serialization.SerializationExtension;
 import akka.serialization.Serializers;
@@ -14,12 +16,18 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+//serialize polymorphic class instances --> Jackson: how subtype to be deserialized
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class LargeMessageProxy extends AbstractBehavior<LargeMessageProxy.Message> {
+	//
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonSubTypes({@JsonSubTypes.Type(value = DependencyWorker.tempMessage.class, name = "tempMessage")})
 
 	////////////////////
 	// Actor Messages //

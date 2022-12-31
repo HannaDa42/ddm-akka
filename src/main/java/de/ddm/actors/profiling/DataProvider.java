@@ -19,6 +19,7 @@ public class DataProvider {
         return next;
     }
 
+
     public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
     }
     private ActorRef<DependencyMiner.Message> messageDepMiner;
@@ -36,6 +37,7 @@ public class DataProvider {
         this.messageDepMiner = arg;
         this.fileRef = file;
     }
+
 
     Queue<IndexClassColumn> nextRef = new LinkedList<>();
     public boolean new_job_bool() {

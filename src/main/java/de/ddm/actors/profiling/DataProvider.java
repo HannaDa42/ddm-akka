@@ -13,13 +13,19 @@ import java.util.*;
 
 public class DataProvider {
 
+    public IndexClassColumn nextRef() {
+        IndexClassColumn next = this.nextRef.poll();
+        this.nextRef.offer(next);
+        return next;
+    }
+
     //TODO: (col ref und col dep?) sinnvoll weiterleiten; depMiner verteilt an DepWorker; hier: inclusionDep verwenden (-> hashing!!!!)
     public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
     }
-    private ActorRef<DependencyMiner.Message> messageDepMiner;
+    private ActorRef<DependencyMiner.Message> messageDepMiner; //dependencyMinerRef
     Map<IndexUnaryIND, Integer> tempMap = new HashMap<>();
     private final String[][][] fileRef;
-    Map<IndexClassColumn, UnaryIND> indDistributor = new HashMap<>();
+    Map<IndexClassColumn, UnaryIND> indDistributor = new HashMap<>(); //columnToTaskCounter
 
     @NoArgsConstructor
     public static class StartMessage implements Message {
@@ -32,8 +38,20 @@ public class DataProvider {
         this.fileRef = file;
     }
 
+    Queue<IndexClassColumn> nextRef = new LinkedList<>(); //nextReferencedColumnId
+    public boolean new_job_bool() {
+        boolean new_task = this.nextRef.stream().anyMatch((id) -> this.indDistributor.get(id).hasNext());
+        return new_task;
+    }
+
+    public DependencyWorker.TaskMessage new_job(IndexClassColumn index) {
+        DependencyWorker.TaskMessage msg = this.indDistributor.get(index).next();
+        if (!this.indDistributor.get(index).hasNext()) {nextRef.remove(index);}
+        return msg;
+    }
+
     public InclusionDependency handle(DependencyMiner.CompletionMessage messageDepMiner,DepMapper mapper) {
-        IndexUnaryIND indexedId = new IndexUnaryIND(messageDepMiner.getReferencedColumnIdSingle(),messageDepMiner.getDependentColumnIdSingle());
+        IndexUnaryIND indexedId = new IndexUnaryIND(messageDepMiner.getRefIndex(),messageDepMiner.getDepIndex());
         if(messageDepMiner.isCandidate()) {
             if (tempMap.remove(indexedId) != null) {
                 if ((tempMap.remove(indexedId)-1)==0) {

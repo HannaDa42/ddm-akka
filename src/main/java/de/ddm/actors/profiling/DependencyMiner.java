@@ -119,7 +119,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.inputFiles = InputConfigurationSingleton.get().getInputFiles();
 		this.headerLines = new String[this.inputFiles.length][];
 		this.fileRepresentation = new String[this.inputFiles.length][][];
-		///TODO: !!!!
 		this.dataprov = new DataProvider(this.getContext().getSelf(), fileRepresentation);
 		this.inputReaders = new ArrayList<>(inputFiles.length);
 		for (int id = 0; id < this.inputFiles.length; id++){this.idContentMap.put(id, new ArrayList<>());
@@ -167,7 +166,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				.onMessage(StartMessage.class, this::handle)
 				.onMessage(BatchMessage.class, this::handle)
 				.onMessage(HeaderMessage.class, this::handle)
-				.onMessage(ShutdownMessage.class, this::handle) //TODO: shutdown ! -> done
+				.onMessage(ShutdownMessage.class, this::handle)
 				.onMessage(RegistrationMessage.class, this::handle)
 				.onMessage(CompletionMessage.class, this::handle)
 				.onMessage(RequestDataMessage.class, this::handle)
@@ -195,7 +194,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(BatchMessage message) {
-		//TODO: check batchMsgTree
 		this.getContext().getLog().info("BatchMessage ID {}", message.id);
 		//
 		int batchSize = message.getBatch().size();
@@ -211,7 +209,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 
 				//insert top element or full tree
-				if(!insertFullTree(i, list.size())){list.add(batchMsgTree);
+				if(!insertFullTree(i, list.size())){list.get(i).addAll(batchMsgTree);
 				} else {list.add(batchMsgTree);}
 			}
 			this.inputReaders.get(message.getId()).tell(new InputReader.ReadBatchMessage(this.getContext().getSelf()));
@@ -309,21 +307,15 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		dep = Arrays.copyOfRange(this.fileRepresentation[message.getDepIndex().getFile()][message.getDepIndex().getColumn()], message.depStart, message.depEnd);
 		//data for worker
 		LargeMessageProxy.LargeMessage msg;
-		//TODO: da müsste eigentlich message.referencedVal und message.getDependencyVal stehen usw und ich bekomme den cast nicht hin
-		// -> wieso, hier ist Message ja vom Typ Request DataMessage, die leitest du weiter zu der tempMessage;
-		// sollten hier noch testen, dass der Cast funtkioniert
+		//TODO:
 		msg = (LargeMessageProxy.LargeMessage) new DependencyWorker.tempMessage(getContext().getSelf(), message.getRefIndex(), message.getDepIndex(), ref, dep, message.id);
 		//send data
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(msg, receiverProxy));
 		return this;
 	}
 
-
-	//shutdown handling!!
 	private Behavior<Message> handle(ShutdownMessage message) {return Behaviors.stopped();}
 
-	//TODO: könnte noch in die Completion msg eingebaut werden um die zeit eines jobs zu zeigen
-	// -> fakultativ oder obligat?
 	private void end() {
 		this.resultCollector.tell(new ResultCollector.FinalizeMessage());
 		long discoveryTime = System.currentTimeMillis() - this.startTime;
@@ -335,9 +327,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		List<DependencyWorker.TaskMessage> taskMessages = this.actorOccupationMap.remove(dependencyWorker);
 		this.actorColumnMap.remove(dependencyWorker);
 		this.dependencyWorkers.remove(dependencyWorker);
-
-		//TODO: hmh wir haben noch die crashed actors, wollen wir die erneut als job aufnehmen oder nicht?
-		// -> wenn wir das noch schaffen, ist sinnvoll, würde es aber aus Zeitgründen erstmal rauslassen.
 		return this;
 	}
 }

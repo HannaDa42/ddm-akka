@@ -1,11 +1,9 @@
 package de.ddm;
-
 import akka.actor.typed.ActorSystem;
-import de.ddm.actors.Guardian;
+import de.ddm.singletons.actors.Guardian;
 import de.ddm.configuration.Command;
 import de.ddm.configuration.SystemConfiguration;
 import de.ddm.singletons.SystemConfigurationSingleton;
-
 import java.io.IOException;
 
 public class Main {
@@ -20,11 +18,9 @@ public class Main {
 		if (config.getRole().equals(SystemConfiguration.MASTER_ROLE)) {
 			if (config.isStartPaused())
 				waitForInput(">>> Press ENTER to start <<<");
-
 			guardian.tell(new Guardian.StartMessage());
 
 		//	waitForInput(">>> Press ENTER to exit <<<");
-
 		//	guardian.tell(new Guardian.ShutdownMessage());
 		}
 	}

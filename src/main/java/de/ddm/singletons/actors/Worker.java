@@ -1,4 +1,4 @@
-package de.ddm.actors;
+package de.ddm.singletons.actors;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -7,8 +7,8 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import de.ddm.actors.patterns.Reaper;
-import de.ddm.actors.profiling.DependencyWorker;
+import de.ddm.singletons.actors.patterns.Reaper;
+import de.ddm.singletons.actors.profiling.DependencyWorker;
 import de.ddm.serialization.AkkaSerializable;
 import de.ddm.singletons.SystemConfigurationSingleton;
 import lombok.NoArgsConstructor;
@@ -69,10 +69,8 @@ public class Worker extends AbstractBehavior<Worker.Message> {
 	}
 
 	private Behavior<Message> handle(ShutdownMessage message) {
-		// If we expect the system to still be active when the a ShutdownMessage is issued,
-		// we should propagate this ShutdownMessage to all active child actors so that they
-		// can end their protocols in a clean way. Simply stopping this actor also stops all
-		// child actors, but in a hard way!
+		//active child actors shutdown
+		for(ActorRef<DependencyWorker.Message> dependencyWorker : this.workers) {dependencyWorker.tell(new DependencyWorker.ShutdownMessage());}
 		return Behaviors.stopped();
 	}
 }

@@ -1,4 +1,4 @@
-package de.ddm.actors.profiling;
+package de.ddm.singletons.actors.profiling;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;

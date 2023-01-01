@@ -1,7 +1,7 @@
 package de.ddm.singletons;
 
 import akka.actor.typed.ActorRef;
-import de.ddm.actors.patterns.Reaper;
+import de.ddm.singletons.actors.patterns.Reaper;
 
 public class ReaperSingleton {
 

@@ -1,4 +1,4 @@
-package de.ddm.actors.profiling;
+package de.ddm.singletons.actors.profiling;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -7,8 +7,8 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
-import de.ddm.IndexClassColumn;
-import de.ddm.actors.patterns.LargeMessageProxy;
+import de.ddm.homework.FileHash;
+import de.ddm.singletons.actors.patterns.LargeMessageProxy;
 import de.ddm.serialization.AkkaSerializable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -41,40 +41,37 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		private static final long serialVersionUID = -4667745204456518160L;
 		ActorRef<DependencyMiner.Message> dependencyMinerLargeMessageProxy;
 		int task;
-		IndexClassColumn referencedVal;
-		IndexClassColumn dependencyVal;
-		int colThis;
-		int colThat;
+		FileHash refHash;
+		FileHash depHash;
+		int startIndex;
+		int endIndex;
 	}
 
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class tempMessage implements Message {
+	public static class proxyMsg implements Message {
 		private static final long serialVersionUID = 5128375631926163648L;
 		//ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
 		ActorRef<DependencyMiner.Message> dependencyMinerLargeMessageProxy;
-		IndexClassColumn referencedVal;
-		IndexClassColumn dependencyVal;
+		FileHash refHash;
+		FileHash depHash;
 		String[] valuesRef;
 		String[] valuesDep;
 		int result;
 	}
-	//shutdown message is missing! --> added know!
+
 	@NoArgsConstructor
 	public static class ShutdownMessage implements Message {
 		private static final long serialVersionUID = -1208833352862186050L;
 	}
 
-
-
-
 	////////////////////////
 	// Actor Construction //
 	////////////////////////
 
-	//private final Map<IndexClassColumn, IndexClassColumn> referencedCols = new HashMap<>();
-	private final Map<IndexClassColumn, String[]> referencedValues = new HashMap<>();
+
+	private final Map<FileHash, String[]> referencedValues = new HashMap<>();
 	public static final String DEFAULT_NAME = "dependencyWorker";
 
 	public static Behavior<Message> create() {
@@ -105,7 +102,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		return newReceiveBuilder()
 				.onMessage(ReceptionistListingMessage.class, this::handle)
 				.onMessage(TaskMessage.class, this::handle)
-				.onMessage(tempMessage.class, this::handle)
+				.onMessage(proxyMsg.class, this::handle)
 				.onMessage(ShutdownMessage.class, this::handle) // shutdown !
 				.build();
 	}
@@ -119,10 +116,10 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 
 	private Behavior<Message> handle(TaskMessage message) {
 		this.getContext().getLog().info("Work in progress!");
-		boolean isRefCol = this.referencedValues.containsKey(message.getReferencedVal());
-		IndexClassColumn refCol= message.getReferencedVal();
-		IndexClassColumn depCol = message.getDependencyVal();
-		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.RequestDataMessage(this.largeMessageProxy, refCol, depCol, message.colThis, message.colThat, isRefCol, message.getTask());
+		boolean isRefCol = this.referencedValues.containsKey(message.getRefHash());
+		FileHash refHash= message.getRefHash();
+		FileHash depHash = message.getDepHash();
+		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.requestMessage(this.largeMessageProxy, refHash, depHash, message.startIndex, message.endIndex, isRefCol, message.getTask());
 		message.dependencyMinerLargeMessageProxy.tell((DependencyMiner.Message) completionMessage);
 		return this;
 	}
@@ -131,19 +128,18 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		return Behaviors.stopped();
 	}
 
-	private Behavior<Message> handle(tempMessage message) {
-		IndexClassColumn rv = message.getReferencedVal();
-		int result = message.getResult();
+	private Behavior<Message> handle(proxyMsg message) {
+		FileHash rv = message.getRefHash();
 		this.referencedValues.clear();
 		this.referencedValues.put(rv, message.getValuesRef());
 		this.getContext().getLog().info((this.referencedValues.toString()));
-		String[] refCol = this.referencedValues.get(message.getReferencedVal());
+		String[] refCol = this.referencedValues.get(message.getRefHash());
 		String[] depCol = message.valuesDep;
 		boolean bTemp = false;
 		for (String someStr : depCol) {
 			if (0 > Arrays.binarySearch(refCol, someStr)) {bTemp = false; break;} else {bTemp = true;}
 		}
-		DependencyMiner.CompletionMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(), message.getResult(), message.getReferencedVal(), message.getDependencyVal(), bTemp);
+		DependencyMiner.CompletionMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(), message.getResult(), message.getRefHash(), message.getDepHash(), bTemp);
 		message.getDependencyMinerLargeMessageProxy().tell(/*(LargeMessageProxy.Message)*/ completionMessage);
 		return this;
 	}

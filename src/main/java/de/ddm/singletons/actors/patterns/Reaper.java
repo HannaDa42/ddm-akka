@@ -1,4 +1,4 @@
-package de.ddm.actors.patterns;
+package de.ddm.singletons.actors.patterns;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;

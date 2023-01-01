@@ -3,7 +3,7 @@ package de.ddm;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
-import de.ddm.actors.patterns.LargeMessageProxy;
+import de.ddm.singletons.actors.patterns.LargeMessageProxy;
 import de.ddm.singletons.SystemConfigurationSingleton;
 import lombok.AllArgsConstructor;
 import lombok.Data;

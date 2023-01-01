@@ -1,4 +1,4 @@
-package de.ddm.actors.profiling;
+package de.ddm.singletons.actors.profiling;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
@@ -6,7 +6,7 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import de.ddm.actors.Guardian;
+import de.ddm.singletons.actors.Guardian;
 import de.ddm.serialization.AkkaSerializable;
 import de.ddm.singletons.DomainConfigurationSingleton;
 import de.ddm.structures.InclusionDependency;

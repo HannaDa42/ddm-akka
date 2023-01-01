@@ -1,4 +1,4 @@
-package de.ddm.actors;
+package de.ddm.singletons.actors;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -7,8 +7,8 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import de.ddm.actors.patterns.Reaper;
-import de.ddm.actors.profiling.DependencyMiner;
+import de.ddm.singletons.actors.patterns.Reaper;
+import de.ddm.singletons.actors.profiling.DependencyMiner;
 import de.ddm.serialization.AkkaSerializable;
 import lombok.NoArgsConstructor;
 

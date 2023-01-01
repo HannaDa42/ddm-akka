@@ -1,13 +1,11 @@
-package de.ddm.actors.patterns;
-
+package de.ddm.singletons.actors.patterns;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
-import de.ddm.actors.profiling.DependencyWorker;
+import de.ddm.singletons.actors.profiling.DependencyWorker;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import de.ddm.actors.profiling.DependencyMiner;
 import akka.serialization.Serialization;
 import akka.serialization.SerializationExtension;
 import akka.serialization.Serializers;
@@ -19,7 +17,6 @@ import lombok.NoArgsConstructor;
 //serialize polymorphic class instances --> Jackson: how subtype to be deserialized
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +24,7 @@ import java.util.Map;
 public class LargeMessageProxy extends AbstractBehavior<LargeMessageProxy.Message> {
 	//
 	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-	@JsonSubTypes({@JsonSubTypes.Type(value = DependencyWorker.tempMessage.class, name = "tempMessage")})
+	@JsonSubTypes({@JsonSubTypes.Type(value = DependencyWorker.proxyMsg.class, name = "tempMessage")})
 
 	////////////////////
 	// Actor Messages //
@@ -94,6 +91,7 @@ public class LargeMessageProxy extends AbstractBehavior<LargeMessageProxy.Messag
 
 	public static final String DEFAULT_NAME = "largeMessageProxy";
 
+	//can we change that?
 	public static int MAX_MESSAGE_SIZE = 100000;
 
 	public static Behavior<Message> create(ActorRef<LargeMessage> parent) {

@@ -1,8 +1,8 @@
-package de.ddm;
+package de.ddm.homework;
 
 import akka.actor.typed.ActorRef;
-import de.ddm.actors.profiling.DependencyMiner;
-import de.ddm.actors.profiling.DependencyWorker;
+import de.ddm.singletons.actors.profiling.DependencyMiner;
+import de.ddm.singletons.actors.profiling.DependencyWorker;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,13 +12,13 @@ import java.util.function.Consumer;
 // generate actors
 @Getter
 @AllArgsConstructor
-public class UnaryIND implements Iterator<DependencyWorker.TaskMessage> {
+public class work implements Iterator<DependencyWorker.TaskMessage> {
     //Jobs assignment list
-    Map<IndexUnaryIND, Integer> tempMap = new HashMap<>();
+    Map<InclusionHash, Integer> tempMap = new HashMap<>();
     //actor crashed before job done
     Queue<DependencyWorker.TaskMessage> crashedActorsList = new LinkedList<>();
     //Jobs to solve
-    Queue<IndexClassColumn> actorQueue = new LinkedList<>();
+    Queue<FileHash> actorQueue = new LinkedList<>();
     DependencyWorker.TaskMessage workload;
     final String[][][] fileColRefList;
 
@@ -26,13 +26,13 @@ public class UnaryIND implements Iterator<DependencyWorker.TaskMessage> {
     int batchIndex = 0;
     int msgIndex = 0;
     final int batchSize = 5000;
-    public IndexClassColumn referencedVal;
+    public FileHash referencedVal;
 
     //Dependency Miner
     final ActorRef<DependencyMiner.Message> depMinRef;
 
 
-    public UnaryIND(IndexClassColumn referencedVal, ActorRef<DependencyMiner.Message> depMinRef, String[][][] fileColRefList) {
+    public work(FileHash referencedVal, ActorRef<DependencyMiner.Message> depMinRef, String[][][] fileColRefList) {
         this.batchIndex = 0;
         this.referencedVal = referencedVal;
         this.depMinRef = depMinRef;
@@ -41,7 +41,7 @@ public class UnaryIND implements Iterator<DependencyWorker.TaskMessage> {
         this.workload = worker_do_work();
     }
 
-    public boolean assignBatch(IndexUnaryIND indexActor, int jobNumber) {
+    public boolean assignBatch(InclusionHash indexActor, int jobNumber) {
         //assign Batch
         if (this.batchIndex == 0) { tempMap.put(indexActor, jobNumber); }
         if (tempMap.containsKey(indexActor)) { return true;
@@ -57,16 +57,16 @@ public class UnaryIND implements Iterator<DependencyWorker.TaskMessage> {
             return null;
         } else {
             //Take head job of queue
-            IndexClassColumn dependencyVal = this.actorQueue.peek();
+            FileHash dependencyVal = this.actorQueue.peek();
             //Index for Actor
-            IndexUnaryIND indexActor = new IndexUnaryIND(this.referencedVal, dependencyVal);
+            InclusionHash indexActor = new InclusionHash(this.referencedVal, dependencyVal);
             //boolean check [relevant? or not? batch]
             boolean usefulBatch = false;
 
 
             //init dependent reference
             int fileIndex = dependencyVal.getFile();
-            int fileColIndex = dependencyVal.getColumn();
+            int fileColIndex = dependencyVal.getEntry();
             String[] depRef = fileColRefList[fileIndex][fileColIndex];
             int colSize = depRef.length;
             int jobNumber = (int) Math.ceil((double) colSize / batchSize);

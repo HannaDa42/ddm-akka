@@ -1,4 +1,4 @@
-package de.ddm.actors.profiling;
+package de.ddm.singletons.actors.profiling;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
@@ -8,8 +8,8 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
-import de.ddm.actors.patterns.LargeMessageProxy;
-import de.ddm.IndexClassColumn;
+import de.ddm.singletons.actors.patterns.LargeMessageProxy;
+import de.ddm.homework.FileHash;
 import de.ddm.serialization.AkkaSerializable;
 import de.ddm.singletons.InputConfigurationSingleton;
 import de.ddm.singletons.SystemConfigurationSingleton;
@@ -25,11 +25,11 @@ import java.util.*;
 public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	// state of work
-	Map<Integer, List<Set<String>>> idContentMap = new HashMap<>();
+	Map<Integer, List<Set<String>>> intMap = new HashMap<>();
 	Map<Integer, Boolean> filteredMap = new HashMap<>();
 	// actor ref
-	Map<ActorRef<DependencyWorker.Message>, IndexClassColumn> actorColumnMap = new HashMap<>();
-	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorOccupationMap = new HashMap<>();
+	Map<ActorRef<DependencyWorker.Message>, FileHash> workerFileMap = new HashMap<>();
+	Map<ActorRef<DependencyWorker.Message>, List<DependencyWorker.TaskMessage>> actorUsed = new HashMap<>();
 	// file representation
 
 
@@ -74,14 +74,14 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class RequestDataMessage implements Message {
+	public static class requestMessage implements Message {
 		private static final long serialVersionUID = 868083729453247423L;
 		ActorRef<LargeMessageProxy.Message> dependencyWorkerReceiverProxy;
-		IndexClassColumn refIndex;
-		IndexClassColumn depIndex;
-		int depStart;
-		int depEnd;
-		boolean refBool;
+		FileHash refHash;
+		FileHash depHash;
+		int startIndex;
+		int endIndex;
+		boolean saveToMemory;
 		int id;
 	}
 
@@ -92,8 +92,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		private static final long serialVersionUID = -7642425159675583598L;
 		ActorRef<DependencyWorker.Message> dependencyWorker;
 		int id;
-		IndexClassColumn refIndex;
-		IndexClassColumn depIndex;
+		FileHash refHash;
+		FileHash depHash;
 		boolean candidate;
 	}
 
@@ -121,16 +121,13 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.fileRepresentation = new String[this.inputFiles.length][][];
 		this.dataprov = new DataProvider(this.getContext().getSelf(), fileRepresentation);
 		this.inputReaders = new ArrayList<>(inputFiles.length);
-		for (int id = 0; id < this.inputFiles.length; id++){this.idContentMap.put(id, new ArrayList<>());
+		for (int id = 0; id < this.inputFiles.length; id++){this.intMap.put(id, new ArrayList<>());
 			this.filteredMap.put(id, false);
 			this.inputReaders.add(context.spawn(InputReader.create(id, this.inputFiles[id]), InputReader.DEFAULT_NAME + "_" + id));}
 		this.resultCollector = context.spawn(ResultCollector.create(), ResultCollector.DEFAULT_NAME);
 		this.largeMessageProxy = this.getContext().spawn(LargeMessageProxy.create(this.getContext().getSelf().unsafeUpcast()), LargeMessageProxy.DEFAULT_NAME);
-
 		this.dependencyWorkers = new ArrayList<>();
-
 		context.getSystem().receptionist().tell(Receptionist.register(dependencyMinerService, context.getSelf()));
-
 	}
 
 	/////////////////
@@ -169,7 +166,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				.onMessage(ShutdownMessage.class, this::handle)
 				.onMessage(RegistrationMessage.class, this::handle)
 				.onMessage(CompletionMessage.class, this::handle)
-				.onMessage(RequestDataMessage.class, this::handle)
+				.onMessage(requestMessage.class, this::handle)
 				.onSignal(Terminated.class, this::handle)
 				.build();
 	}
@@ -194,8 +191,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(BatchMessage message) {
-		this.getContext().getLog().info("BatchMessage ID {}", message.id);
-		//
 		int batchSize = message.getBatch().size();
 		//read file obj
 		if(batchSize > 0) {
@@ -205,10 +200,10 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				Set<String> batchMsgTree = new TreeSet<>();
 				//build the batch set
 				for(int j = 0; j < batchSize; j++) {batchMsgTree.add(message.batch.get(j)[i]);}
-				List<Set<String>> list = idContentMap.get(message.id);
+				List<Set<String>> list = intMap.get(message.id);
 
 
-				//insert top element or full tree
+				//insert top element or full tree (first runs)
 				if(!insertFullTree(i, list.size())){list.get(i).addAll(batchMsgTree);
 				} else {list.add(batchMsgTree);}
 			}
@@ -217,7 +212,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		} else {
 			//boolean check
 			filteredMap.put(message.id, true);
-			List<Set<String>> contentMap = idContentMap.get(message.id);
+			List<Set<String>> contentMap = intMap.get(message.id);
 			int mapSize = contentMap.size();
 			//representing array
 			fileRepresentation[message.id] = new String[mapSize][];
@@ -230,23 +225,23 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				fileRepresentation[message.id][i] = data;
 			}
 
-			this.getContext().getLog().info("BatchMessage ID {} loaded data!", message.id);
+			this.getContext().getLog().info("Batch {} completed!", message.id);
 			//send data
-			int msgSize = this.idContentMap.get(message.id).size();
+			int msgSize = this.intMap.get(message.id).size();
 			this.dataprov.add_data(message.id, msgSize);
-			this.idContentMap.remove(message.id);
+			this.intMap.remove(message.id);
 		}
 		//stay busy
 		for (ActorRef<DependencyWorker.Message> worker : this.dependencyWorkers) {
-			if(this.actorOccupationMap.get(worker).isEmpty()) {
+			if(this.actorUsed.get(worker).isEmpty()) {
 				//new task available
 				if(this.dataprov.new_job_bool()) {
-					IndexClassColumn newRef = this.dataprov.nextRef();
-					this.actorColumnMap.put(worker, newRef);
+					FileHash newRef = this.dataprov.nextRefHash();
+					this.workerFileMap.put(worker, newRef);
 
 					//Msg handling
 					DependencyWorker.TaskMessage msg = this.dataprov.new_job(newRef);
-					this.actorOccupationMap.get(worker).add(msg);
+					this.actorUsed.get(worker).add(msg);
 					worker.tell(msg);
 				}
 				//else i am not busy msg?
@@ -259,16 +254,16 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		ActorRef<DependencyWorker.Message> dependencyWorker = message.getDependencyWorker();
 		if (!this.dependencyWorkers.contains(dependencyWorker)) {
 			this.dependencyWorkers.add(dependencyWorker);
-			this.actorOccupationMap.put(dependencyWorker, new ArrayList<>());
+			this.actorUsed.put(dependencyWorker, new ArrayList<>());
 			this.getContext().watch(dependencyWorker);
 			//new task available
 			if(this.dataprov.new_job_bool()) {
-				IndexClassColumn newRef = this.dataprov.nextRef();
-				this.actorColumnMap.put(dependencyWorker, newRef);
+				FileHash newRef = this.dataprov.nextRefHash();
+				this.workerFileMap.put(dependencyWorker, newRef);
 
 				//Msg handling
 				DependencyWorker.TaskMessage msg = this.dataprov.new_job(newRef);
-				this.actorOccupationMap.get(dependencyWorker).add(msg);
+				this.actorUsed.get(dependencyWorker).add(msg);
 				dependencyWorker.tell(msg);
 			}
 			//else i am not busy msg?
@@ -278,37 +273,34 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	private Behavior<Message> handle(CompletionMessage message) {
 		ActorRef<DependencyWorker.Message> dependencyWorker = message.getDependencyWorker();
-		InclusionDependency ind = this.dataprov.handle(message, (IndexClassColumn referencedColumnId, IndexClassColumn dependentColumnId) -> {
+		InclusionDependency ind = this.dataprov.handle(message, (FileHash referencedColumnId, FileHash dependentColumnId) -> {
 			File referencedFile = this.inputFiles[referencedColumnId.getFile()];
 			File dependentFile = this.inputFiles[dependentColumnId.getFile()];
-			String referencedAttribute = this.headerLines[referencedColumnId.getFile()][referencedColumnId.getColumn()];
-			String dependentAttribute = this.headerLines[dependentColumnId.getFile()][dependentColumnId.getColumn()];
+			String referencedAttribute = this.headerLines[referencedColumnId.getFile()][referencedColumnId.getEntry()];
+			String dependentAttribute = this.headerLines[dependentColumnId.getFile()][dependentColumnId.getEntry()];
 			return new InclusionDependency(dependentFile, new String[]{dependentAttribute}, referencedFile, new String[]{referencedAttribute});
 		});
 		if (ind != null){
 			this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		}
 		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
-		this.getContext().getLog().info("CompletionMessage ID {} :", message.id);
+		this.getContext().getLog().info("Completion on one IND run: " + message.id);
 		return this;
 	}
 
-	private Behavior<Message> handle(RequestDataMessage message) {
-		this.getContext().getLog().info("RequestDataMessage ID: {}", message.id);
+	private Behavior<Message> handle(requestMessage message) {
 		ActorRef<LargeMessageProxy.Message> receiverProxy = message.dependencyWorkerReceiverProxy;
-
 		String[] ref;
 		String[] dep;
-
 		//reference
-		if (message.refBool) { ref = null;
-		} else { ref = this.fileRepresentation[message.getRefIndex().getFile()][message.getRefIndex().getColumn()];}
+		if (message.saveToMemory) { ref = null;
+		} else { ref = this.fileRepresentation[message.getRefHash().getFile()][message.getRefHash().getEntry()];}
 		//dependent
-		dep = Arrays.copyOfRange(this.fileRepresentation[message.getDepIndex().getFile()][message.getDepIndex().getColumn()], message.depStart, message.depEnd);
+		dep = Arrays.copyOfRange(this.fileRepresentation[message.getDepHash().getFile()][message.getDepHash().getEntry()], message.startIndex, message.endIndex);
 		//data for worker
 		LargeMessageProxy.LargeMessage msg;
 		//TODO:
-		msg = (LargeMessageProxy.LargeMessage) new DependencyWorker.tempMessage(getContext().getSelf(), message.getRefIndex(), message.getDepIndex(), ref, dep, message.id);
+		msg = (LargeMessageProxy.LargeMessage) new DependencyWorker.proxyMsg(getContext().getSelf(), message.getRefHash(), message.getDepHash(), ref, dep, message.id);
 		//send data
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(msg, receiverProxy));
 		return this;
@@ -324,8 +316,8 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	private Behavior<Message> handle(Terminated signal) {
 		ActorRef<DependencyWorker.Message> dependencyWorker = signal.getRef().unsafeUpcast();
-		List<DependencyWorker.TaskMessage> taskMessages = this.actorOccupationMap.remove(dependencyWorker);
-		this.actorColumnMap.remove(dependencyWorker);
+		List<DependencyWorker.TaskMessage> taskMessages = this.actorUsed.remove(dependencyWorker);
+		this.workerFileMap.remove(dependencyWorker);
 		this.dependencyWorkers.remove(dependencyWorker);
 		return this;
 	}

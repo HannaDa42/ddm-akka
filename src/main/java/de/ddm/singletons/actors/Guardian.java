@@ -1,11 +1,11 @@
-package de.ddm.actors;
+package de.ddm.singletons.actors;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
-import de.ddm.actors.patterns.Reaper;
+import de.ddm.singletons.actors.patterns.Reaper;
 import de.ddm.configuration.SystemConfiguration;
 import de.ddm.serialization.AkkaSerializable;
 import de.ddm.singletons.SystemConfigurationSingleton;

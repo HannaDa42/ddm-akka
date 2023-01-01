@@ -291,9 +291,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 			this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		}
 		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
-		//TODO: Nary Deps beruecksichtigen!
-
-
 		this.getContext().getLog().info("CompletionMessage ID {} :", message.id);
 		return this;
 	}
@@ -313,7 +310,9 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		//data for worker
 		LargeMessageProxy.LargeMessage msg;
 		//TODO: da müsste eigentlich message.referencedVal und message.getDependencyVal stehen usw und ich bekomme den cast nicht hin
-		msg = new DependencyWorker.tempMessage(getContext().getSelf(), message.getRefIndex(), message.getDepIndex(), ref, dep, message.id);
+		// -> wieso, hier ist Message ja vom Typ Request DataMessage, die leitest du weiter zu der tempMessage;
+		// sollten hier noch testen, dass der Cast funtkioniert
+		msg = (LargeMessageProxy.LargeMessage) new DependencyWorker.tempMessage(getContext().getSelf(), message.getRefIndex(), message.getDepIndex(), ref, dep, message.id);
 		//send data
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(msg, receiverProxy));
 		return this;
@@ -324,6 +323,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	private Behavior<Message> handle(ShutdownMessage message) {return Behaviors.stopped();}
 
 	//TODO: könnte noch in die Completion msg eingebaut werden um die zeit eines jobs zu zeigen
+	// -> fakultativ oder obligat?
 	private void end() {
 		this.resultCollector.tell(new ResultCollector.FinalizeMessage());
 		long discoveryTime = System.currentTimeMillis() - this.startTime;
@@ -337,6 +337,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.dependencyWorkers.remove(dependencyWorker);
 
 		//TODO: hmh wir haben noch die crashed actors, wollen wir die erneut als job aufnehmen oder nicht?
+		// -> wenn wir das noch schaffen, ist sinnvoll, würde es aber aus Zeitgründen erstmal rauslassen.
 		return this;
 	}
 }

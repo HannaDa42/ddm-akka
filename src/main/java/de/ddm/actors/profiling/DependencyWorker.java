@@ -7,7 +7,6 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.receptionist.Receptionist;
-import akka.remote.ShutDownAssociation;
 import de.ddm.IndexClassColumn;
 import de.ddm.actors.patterns.LargeMessageProxy;
 import de.ddm.serialization.AkkaSerializable;
@@ -53,7 +52,8 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	@AllArgsConstructor
 	public static class tempMessage implements Message {
 		private static final long serialVersionUID = 5128375631926163648L;
-		ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
+		//ActorRef<LargeMessageProxy.Message> dependencyMinerLargeMessageProxy;
+		ActorRef<DependencyMiner.Message> dependencyMinerLargeMessageProxy;
 		IndexClassColumn referencedVal;
 		IndexClassColumn dependencyVal;
 		String[] valuesRef;
@@ -144,7 +144,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 			if (0 > Arrays.binarySearch(refCol, someStr)) {bTemp = false; break;} else {bTemp = true;}
 		}
 		DependencyMiner.CompletionMessage completionMessage = new DependencyMiner.CompletionMessage(this.getContext().getSelf(), message.getResult(), message.getReferencedVal(), message.getDependencyVal(), bTemp);
-		message.getDependencyMinerLargeMessageProxy().tell((LargeMessageProxy.Message) completionMessage);
+		message.getDependencyMinerLargeMessageProxy().tell(/*(LargeMessageProxy.Message)*/ completionMessage);
 		return this;
 	}
 }

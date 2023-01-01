@@ -13,6 +13,12 @@ import java.util.*;
 
 public class DataProvider {
 
+    public IndexClassColumn nextRef() {
+        IndexClassColumn next = this.nextRef.poll();
+        this.nextRef.offer(next);
+        return next;
+    }
+
     public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
     }
     private ActorRef<DependencyMiner.Message> messageDepMiner;
@@ -26,13 +32,26 @@ public class DataProvider {
     }
 
 
-    public DataProvider(ActorRef<DependencyMiner.Message> arg, String[][][] file, UnaryIND indDistributor){
+    public DataProvider(ActorRef<DependencyMiner.Message> arg, String[][][] file){
         this.messageDepMiner = arg;
         this.fileRef = file;
     }
 
+
+    Queue<IndexClassColumn> nextRef = new LinkedList<>();
+    public boolean new_job_bool() {
+        boolean new_task = this.nextRef.stream().anyMatch((id) -> this.indDistributor.get(id).hasNext());
+        return new_task;
+    }
+
+    public DependencyWorker.TaskMessage new_job(IndexClassColumn index) {
+        DependencyWorker.TaskMessage msg = this.indDistributor.get(index).next();
+        if (!this.indDistributor.get(index).hasNext()) {nextRef.remove(index);}
+        return msg;
+    }
+
     public InclusionDependency handle(DependencyMiner.CompletionMessage messageDepMiner,DepMapper mapper) {
-        IndexUnaryIND indexedId = new IndexUnaryIND(messageDepMiner.getReferencedColumnIdSingle(),messageDepMiner.getDependentColumnIdSingle());
+        IndexUnaryIND indexedId = new IndexUnaryIND(messageDepMiner.getRefIndex(),messageDepMiner.getDepIndex());
         if(messageDepMiner.isCandidate()) {
             if (tempMap.remove(indexedId) != null) {
                 if ((tempMap.remove(indexedId)-1)==0) {

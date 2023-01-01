@@ -3,7 +3,7 @@
 
 Terminal - Program path
 ```sh
-mvn package
+mvn package -f "pom.xml"
 ```
 
 

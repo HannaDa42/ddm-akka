@@ -13,7 +13,6 @@ import java.util.*;
 
 public class DataProvider {
 
-    //TODO: (col ref und col dep?) sinnvoll weiterleiten; depMiner verteilt an DepWorker; hier: inclusionDep verwenden (-> hashing!!!!)
     public interface Message extends AkkaSerializable, LargeMessageProxy.LargeMessage {
     }
     private ActorRef<DependencyMiner.Message> messageDepMiner;

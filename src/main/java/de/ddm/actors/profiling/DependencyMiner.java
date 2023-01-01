@@ -192,7 +192,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(BatchMessage message) {
-		// Ignoring batch content for now ... but I could do so much with it.
 		//TODO: implement meaningful messages here -> ????
 		//TODO: dataprovider -> add new Data; fix costructor!
 		if (message.getBatch().size() != 0)
@@ -223,9 +222,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 			this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		}
 		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
-		//TODO: Nary Deps beruecksichtigen!
-
-
 		this.getContext().getLog().info("CompletionMessage:");
 		return this;
 	}

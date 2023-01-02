@@ -22,11 +22,3 @@ e.g. with host
 ```sh
 java -jar target/ddm-akka-1.0.jar master -h localhost
 ```
-
-## Define Worker
-Start a worker process on master [params]
-
-e.g.
-```sh
-java -jar target/ddm-akka-1.0.jar worker -mh localhost
-```

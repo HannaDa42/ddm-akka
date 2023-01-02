@@ -7,7 +7,7 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class FileHash {
+public class FileHash implements Comparable{
     // create hash Index for every column
     int file;
     int entry;
@@ -27,4 +27,9 @@ public class FileHash {
     @Override
     // string msg-debug
     public String toString() {return "ColumnIndex["+ file + " | " + entry + ']';}
+
+    @Override
+    public int compareTo(Object o) {
+        return ((this == o) ? 0 : 1);
+    }
 }

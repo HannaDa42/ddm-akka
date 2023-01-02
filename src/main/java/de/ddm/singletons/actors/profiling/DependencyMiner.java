@@ -201,10 +201,11 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				//build the batch set
 				for(int j = 0; j < batchSize; j++) {batchMsgTree.add(message.batch.get(j)[i]);}
 				List<Set<String>> list = intMap.get(message.id);
-
+				int b = list.size();
+				String s = String.valueOf(b);
 
 				//insert top element or full tree (first runs)
-				if(!insertFullTree(i, list.size())){list.get(i).addAll(batchMsgTree);
+				if(!insertFullTree(i, list.size())&&i<list.size()){list.get(i).addAll(batchMsgTree);
 				} else {list.add(batchMsgTree);}
 			}
 			this.inputReaders.get(message.getId()).tell(new InputReader.ReadBatchMessage(this.getContext().getSelf()));
@@ -216,7 +217,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 			int mapSize = contentMap.size();
 			//representing array
 			fileRepresentation[message.id] = new String[mapSize][];
-
 			for(int i = 0; i<mapSize; i++) {
 				//transformation
 				String[] data = contentMap.get(i).toArray(new String[0]);
@@ -227,7 +227,9 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 			this.getContext().getLog().info("Batch {} completed!", message.id);
 			//send data
+
 			int msgSize = this.intMap.get(message.id).size();
+
 			this.dataprov.add_data(message.id, msgSize);
 			this.intMap.remove(message.id);
 		}
@@ -251,7 +253,9 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(RegistrationMessage message) {
+		this.getContext().getLog().info("Miner started RegistrationMessage");
 		ActorRef<DependencyWorker.Message> dependencyWorker = message.getDependencyWorker();
+
 		if (!this.dependencyWorkers.contains(dependencyWorker)) {
 			this.dependencyWorkers.add(dependencyWorker);
 			this.actorUsed.put(dependencyWorker, new ArrayList<>());
@@ -272,6 +276,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(CompletionMessage message) {
+		this.getContext().getLog().info("Miner started CompletionMessage");
 		ActorRef<DependencyWorker.Message> dependencyWorker = message.getDependencyWorker();
 		InclusionDependency ind = this.dataprov.handle(message, (FileHash referencedColumnId, FileHash dependentColumnId) -> {
 			File referencedFile = this.inputFiles[referencedColumnId.getFile()];
@@ -283,12 +288,14 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		if (ind != null){
 			this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		}
+		//here?
 		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		this.getContext().getLog().info("Completion on one IND run: " + message.id);
 		return this;
 	}
 
 	private Behavior<Message> handle(requestMessage message) {
+		this.getContext().getLog().info("Miner started ReequestMessage");
 		ActorRef<LargeMessageProxy.Message> receiverProxy = message.dependencyWorkerReceiverProxy;
 		String[] ref;
 		String[] dep;
@@ -299,7 +306,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		dep = Arrays.copyOfRange(this.fileRepresentation[message.getDepHash().getFile()][message.getDepHash().getEntry()], message.startIndex, message.endIndex);
 		//data for worker
 		LargeMessageProxy.LargeMessage msg;
-		//TODO:
+
 		msg = (LargeMessageProxy.LargeMessage) new DependencyWorker.proxyMsg(getContext().getSelf(), message.getRefHash(), message.getDepHash(), ref, dep, message.id);
 		//send data
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(msg, receiverProxy));

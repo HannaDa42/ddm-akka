@@ -60,6 +60,7 @@ public class Master extends AbstractBehavior<Master.Message> {
 
 	@Override
 	public Receive<Message> createReceive() {
+		this.getContext().getLog().info("Master started createReceive");
 		return newReceiveBuilder()
 				.onMessage(StartMessage.class, this::handle)
 				.onMessage(ShutdownMessage.class, this::handle)
@@ -67,11 +68,13 @@ public class Master extends AbstractBehavior<Master.Message> {
 	}
 
 	private Behavior<Message> handle(StartMessage message) {
+		this.getContext().getLog().info("Master started StratMEssage");
 		this.dependencyMiner.tell(new DependencyMiner.StartMessage());
 		return this;
 	}
 
 	private Behavior<Message> handle(ShutdownMessage message) {
+		this.getContext().getLog().info("Master started Shutdowm");
 		//dependencyMiner shutdown!!!!!
 		this.dependencyMiner.tell(new DependencyMiner.ShutdownMessage());
 		return Behaviors.stopped();

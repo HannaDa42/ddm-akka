@@ -81,7 +81,9 @@ public class DataProvider {
                     this.unmatchedColQ.offer(dep);
                 }
             }
-            this.IndexMap.put(colId, uindTemp);
+            if (!(this.IndexMap.containsKey(colId))){
+                this.IndexMap.put(colId, uindTemp);
+            }
             this.nextColQ.clear();
             this.nextColQ.addAll(this.IndexMap.keySet());
         }

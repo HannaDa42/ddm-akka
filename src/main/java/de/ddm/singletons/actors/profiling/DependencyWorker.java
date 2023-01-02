@@ -108,6 +108,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	}
 
 	private Behavior<Message> handle(ReceptionistListingMessage message) {
+		this.getContext().getLog().info("Worker started ReceptionistListingMessage");
 		Set<ActorRef<DependencyMiner.Message>> dependencyMiners = message.getListing().getServiceInstances(DependencyMiner.dependencyMinerService);
 		for (ActorRef<DependencyMiner.Message> dependencyMiner : dependencyMiners)
 			dependencyMiner.tell(new DependencyMiner.RegistrationMessage(this.getContext().getSelf()));
@@ -115,7 +116,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	}
 
 	private Behavior<Message> handle(TaskMessage message) {
-		this.getContext().getLog().info("Work in progress!");
+		this.getContext().getLog().info("Worker started TaskMessage: Work in progress!");
 		boolean isRefCol = this.referencedValues.containsKey(message.getRefHash());
 		FileHash refHash= message.getRefHash();
 		FileHash depHash = message.getDepHash();
@@ -129,6 +130,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 	}
 
 	private Behavior<Message> handle(proxyMsg message) {
+		this.getContext().getLog().info("Worker started ProxyMessage");
 		FileHash rv = message.getRefHash();
 		this.referencedValues.clear();
 		this.referencedValues.put(rv, message.getValuesRef());

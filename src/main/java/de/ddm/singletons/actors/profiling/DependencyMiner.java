@@ -23,7 +23,6 @@ import java.util.*;
 
 @Slf4j
 public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
-
 	// state of work
 	Map<Integer, List<Set<String>>> intMap = new HashMap<>();
 	Map<Integer, Boolean> filteredMap = new HashMap<>();
@@ -161,9 +160,9 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	public Receive<Message> createReceive() {
 		return newReceiveBuilder()
 				.onMessage(StartMessage.class, this::handle)
-				.onMessage(BatchMessage.class, this::handle)
 				.onMessage(HeaderMessage.class, this::handle)
 				.onMessage(RegistrationMessage.class, this::handle)
+				.onMessage(BatchMessage.class, this::handle)
 				.onMessage(CompletionMessage.class, this::handle)
 				.onMessage(RequestMessage.class, this::handle)
 				.onMessage(ShutdownMessage.class, this::handle)
@@ -202,8 +201,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				//build the batch set
 				for(int j = 0; j < batchSize; j++) {batchMsgTree.add(message.batch.get(j)[i]);}
 				List<Set<String>> list = intMap.get(message.id);
-				int b = list.size();
-				String s = String.valueOf(b);
 
 				//insert top element or full tree (first runs)
 				if(!insertFullTree(i, list.size())&&i<list.size()){list.get(i).addAll(batchMsgTree);
@@ -293,7 +290,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		this.getContext().getLog().info("Completion on one IND run: " + message.id);
 		if (this.filteredMap.values().stream().allMatch((val) -> val) && this.actorUsed.values().stream().allMatch(List::isEmpty) && !(this.dataprov.nextRef.stream().anyMatch((id) -> this.dataprov.IndexMap.get(id).hasNext()))) {
-			this.resultCollector.tell(new ResultCollector.FinalizeMessage());;
+			this.resultCollector.tell(new ResultCollector.FinalizeMessage());
 		}
 		return this;
 	}
@@ -310,7 +307,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		dep = Arrays.copyOfRange(this.fileRepresentation[message.getDepHash().getFile()][message.getDepHash().getEntry()], message.startIndex, message.endIndex);
 		//data for worker
 		LargeMessageProxy.LargeMessage msg;
-
 		msg = (LargeMessageProxy.LargeMessage) new DependencyWorker.proxyMsg(getContext().getSelf(), message.getRefHash(), message.getDepHash(), ref, dep, message.id);
 		//send data
 		this.largeMessageProxy.tell(new LargeMessageProxy.SendMessage(msg, receiverProxy));

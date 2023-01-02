@@ -40,6 +40,7 @@ public class ResultCollector extends AbstractBehavior<ResultCollector.Message> {
 	@NoArgsConstructor
 	public static class FinalizeMessage implements Message {
 		private static final long serialVersionUID = -6603856949941810321L;
+		List<InclusionDependency> inclusionDependencies;
 	}
 
 	////////////////////////
@@ -84,8 +85,8 @@ public class ResultCollector extends AbstractBehavior<ResultCollector.Message> {
 	}
 
 	private Behavior<Message> handle(ResultMessage message) throws IOException {
+		this.getContext().getLog().info("Hello From ResultMessage!");
 		this.getContext().getLog().info("Received {} INDs!", message.getInclusionDependencies().size());
-
 		for (InclusionDependency ind : message.getInclusionDependencies()) {
 			this.writer.write(ind.toString());
 			this.writer.newLine();
@@ -96,7 +97,6 @@ public class ResultCollector extends AbstractBehavior<ResultCollector.Message> {
 
 	private Behavior<Message> handle(FinalizeMessage message) throws IOException {
 		this.getContext().getLog().info("Received FinalizeMessage!");
-
 		this.writer.flush();
 		this.getContext().getSystem().unsafeUpcast().tell(new Guardian.ShutdownMessage());
 		return this;

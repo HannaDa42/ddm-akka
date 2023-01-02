@@ -74,7 +74,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	@Getter
 	@NoArgsConstructor
 	@AllArgsConstructor
-	public static class requestMessage implements Message {
+	public static class RequestMessage implements Message {
 		private static final long serialVersionUID = 868083729453247423L;
 		ActorRef<LargeMessageProxy.Message> dependencyWorkerReceiverProxy;
 		FileHash refHash;
@@ -163,10 +163,10 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 				.onMessage(StartMessage.class, this::handle)
 				.onMessage(BatchMessage.class, this::handle)
 				.onMessage(HeaderMessage.class, this::handle)
-				.onMessage(ShutdownMessage.class, this::handle)
 				.onMessage(RegistrationMessage.class, this::handle)
 				.onMessage(CompletionMessage.class, this::handle)
-				.onMessage(requestMessage.class, this::handle)
+				.onMessage(RequestMessage.class, this::handle)
+				.onMessage(ShutdownMessage.class, this::handle)
 				.onSignal(Terminated.class, this::handle)
 				.build();
 	}
@@ -181,6 +181,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(HeaderMessage message) {
+		this.getContext().getLog().info("HeaderMessage");
 		this.headerLines[message.getId()] = message.getHeader();
 		return this;
 	}
@@ -246,7 +247,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 					this.actorUsed.get(worker).add(msg);
 					worker.tell(msg);
 				}
-				//else i am not busy msg?
 			}
 		}
 		return this;
@@ -277,6 +277,7 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 
 	private Behavior<Message> handle(CompletionMessage message) {
 		this.getContext().getLog().info("Miner started CompletionMessage");
+		this.getContext().getLog().info("Hello from CompletionMessage");
 		ActorRef<DependencyWorker.Message> dependencyWorker = message.getDependencyWorker();
 		InclusionDependency ind = this.dataprov.handle(message, (FileHash referencedColumnId, FileHash dependentColumnId) -> {
 			File referencedFile = this.inputFiles[referencedColumnId.getFile()];
@@ -291,10 +292,13 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 		//here?
 		this.resultCollector.tell(new ResultCollector.ResultMessage(Collections.singletonList(ind)));
 		this.getContext().getLog().info("Completion on one IND run: " + message.id);
+		if (this.filteredMap.values().stream().allMatch((val) -> val) && this.actorUsed.values().stream().allMatch(List::isEmpty) && !(this.dataprov.nextRef.stream().anyMatch((id) -> this.dataprov.IndexMap.get(id).hasNext()))) {
+			this.resultCollector.tell(new ResultCollector.FinalizeMessage());;
+		}
 		return this;
 	}
 
-	private Behavior<Message> handle(requestMessage message) {
+	private Behavior<Message> handle(RequestMessage message) {
 		this.getContext().getLog().info("Miner started ReequestMessage");
 		ActorRef<LargeMessageProxy.Message> receiverProxy = message.dependencyWorkerReceiverProxy;
 		String[] ref;
@@ -314,12 +318,6 @@ public class DependencyMiner extends AbstractBehavior<DependencyMiner.Message> {
 	}
 
 	private Behavior<Message> handle(ShutdownMessage message) {return Behaviors.stopped();}
-
-	private void end() {
-		this.resultCollector.tell(new ResultCollector.FinalizeMessage());
-		long discoveryTime = System.currentTimeMillis() - this.startTime;
-		this.getContext().getLog().info("Finished mining within {} ms!", discoveryTime);
-	}
 
 	private Behavior<Message> handle(Terminated signal) {
 		ActorRef<DependencyWorker.Message> dependencyWorker = signal.getRef().unsafeUpcast();

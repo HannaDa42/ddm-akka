@@ -67,7 +67,7 @@ public class DataProvider {
 
     Queue<FileHash> nextColQ = new PriorityQueue<>();
     Queue<FileHash> unmatchedColQ = new LinkedList<>();
-    public int add_data (int id, int noCols) {
+    public void add_data (int id, int noCols) {
         for (int i = 0; i < noCols; i++) {
             FileHash colId = new FileHash(id, i);
             for (work un : this.IndexMap.values()) {
@@ -87,6 +87,5 @@ public class DataProvider {
             this.nextColQ.clear();
             this.nextColQ.addAll(this.IndexMap.keySet());
         }
-        return 0;
     }
 }

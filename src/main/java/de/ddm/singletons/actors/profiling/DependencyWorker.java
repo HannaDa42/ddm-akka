@@ -120,7 +120,7 @@ public class DependencyWorker extends AbstractBehavior<DependencyWorker.Message>
 		boolean isRefCol = this.referencedValues.containsKey(message.getRefHash());
 		FileHash refHash= message.getRefHash();
 		FileHash depHash = message.getDepHash();
-		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.requestMessage(this.largeMessageProxy, refHash, depHash, message.startIndex, message.endIndex, isRefCol, message.getTask());
+		LargeMessageProxy.LargeMessage completionMessage = new DependencyMiner.RequestMessage(this.largeMessageProxy, refHash, depHash, message.startIndex, message.endIndex, isRefCol, message.getTask());
 		message.dependencyMinerLargeMessageProxy.tell((DependencyMiner.Message) completionMessage);
 		return this;
 	}
